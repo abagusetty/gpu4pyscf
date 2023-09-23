@@ -59,7 +59,7 @@ jobs:
       - curl -fsSL https://developer.download.nvidia.cn/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub | apt-key add -
       - echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/cuda.list
       - apt-get update
-      - > apt-get install -yq --no-install-recommends --fix-missing gnupg2 curl 
+      - apt-get install -yq --no-install-recommends --fix-missing gnupg2 curl 
           cuda-cudart-11-7=11.7.99-1
           cuda-compat-11-7
           cuda-libraries-11-7=11.7.1-1
