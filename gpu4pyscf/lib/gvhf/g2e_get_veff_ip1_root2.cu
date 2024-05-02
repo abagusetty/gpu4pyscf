@@ -303,12 +303,21 @@ static void GINTint2e_get_veff_ip1_kernel0010(GINTEnvVars envs,
       shell_jy += gout2_jy*d;
       shell_jz += gout2_jz*d;
 
-      atomicAdd(vk+ish*3  , shell_ix);
-      atomicAdd(vk+ish*3+1, shell_iy);
-      atomicAdd(vk+ish*3+2, shell_iz);
-      atomicAdd(vk+jsh*3  , shell_jx);
-      atomicAdd(vk+jsh*3+1, shell_jy);
-      atomicAdd(vk+jsh*3+2, shell_jz);
+      //atomicAdd(vk+ish*3  , shell_ix);
+      //atomicAdd(vk+ish*3+1, shell_iy);
+      //atomicAdd(vk+ish*3+2, shell_iz);
+      //atomicAdd(vk+jsh*3  , shell_jx);
+      //atomicAdd(vk+jsh*3+1, shell_jy);
+      //atomicAdd(vk+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vk+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vk+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vk+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vk+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vk+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vk+jsh*3+2, tx, ty);
+
     }
   }
 }
@@ -322,8 +331,10 @@ static void GINTint2e_get_veff_ip1_kernel0011(GINTEnvVars envs,
   int ntasks_kl = offsets.ntasks_kl;
   int task_ij = blockIdx.x * blockDim.x + threadIdx.x;
   int task_kl = blockIdx.y * blockDim.y + threadIdx.y;
+  bool active = true;
   if (task_ij >= ntasks_ij || task_kl >= ntasks_kl) {
-    return;
+    task_ij = 0; task_kl = 0;
+    active = false;
   }
   int bas_ij = offsets.bas_ij + task_ij;
   int bas_kl = offsets.bas_kl + task_kl;
@@ -428,6 +439,7 @@ static void GINTint2e_get_veff_ip1_kernel0011(GINTEnvVars envs,
   prim_kl1 = prim_kl + nprim_kl;
   double rw[4];
   int irys;
+  if(active){
   for (ij = prim_ij0; ij < prim_ij1; ++ij) {
     double ai = i_exponent[ij] * 2.0;
     double aj = j_exponent[ij] * 2.0;
@@ -578,7 +590,7 @@ static void GINTint2e_get_veff_ip1_kernel0011(GINTEnvVars envs,
         gout8_jz += gx0*gy0*(aj*gz11);
       }
     } }
-
+  }
   int *ao_loc = c_bpcache.ao_loc;
   int i0 = ao_loc[ish];
   int j0 = ao_loc[jsh];
@@ -676,12 +688,20 @@ static void GINTint2e_get_veff_ip1_kernel0011(GINTEnvVars envs,
       shell_jy += gout8_jy*d;
       shell_jz += gout8_jz*d;
 
-      atomicAdd(vj+ish*3  , shell_ix);
-      atomicAdd(vj+ish*3+1, shell_iy);
-      atomicAdd(vj+ish*3+2, shell_iz);
-      atomicAdd(vj+jsh*3  , shell_jx);
-      atomicAdd(vj+jsh*3+1, shell_jy);
-      atomicAdd(vj+jsh*3+2, shell_jz);
+      //atomicAdd(vj+ish*3  , shell_ix);
+      //atomicAdd(vj+ish*3+1, shell_iy);
+      //atomicAdd(vj+ish*3+2, shell_iz);
+      //atomicAdd(vj+jsh*3  , shell_jx);
+      //atomicAdd(vj+jsh*3+1, shell_jy);
+      //atomicAdd(vj+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vj+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vj+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vj+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vj+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vj+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vj+jsh*3+2, tx, ty);
     }
     if(vk != NULL) {
       double shell_ix = 0, shell_iy = 0, shell_iz = 0, shell_jx = 0, shell_jy = 0, shell_jz = 0;
@@ -843,12 +863,20 @@ static void GINTint2e_get_veff_ip1_kernel0011(GINTEnvVars envs,
       shell_jy += gout8_jy*d;
       shell_jz += gout8_jz*d;
 
-      atomicAdd(vk+ish*3  , shell_ix);
-      atomicAdd(vk+ish*3+1, shell_iy);
-      atomicAdd(vk+ish*3+2, shell_iz);
-      atomicAdd(vk+jsh*3  , shell_jx);
-      atomicAdd(vk+jsh*3+1, shell_jy);
-      atomicAdd(vk+jsh*3+2, shell_jz);
+      //atomicAdd(vk+ish*3  , shell_ix);
+      //atomicAdd(vk+ish*3+1, shell_iy);
+      //atomicAdd(vk+ish*3+2, shell_iz);
+      //atomicAdd(vk+jsh*3  , shell_jx);
+      //atomicAdd(vk+jsh*3+1, shell_jy);
+      //atomicAdd(vk+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vk+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vk+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vk+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vk+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vk+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vk+jsh*3+2, tx, ty);
     }
   }
 }
@@ -862,8 +890,10 @@ static void GINTint2e_get_veff_ip1_kernel0020(GINTEnvVars envs,
   int ntasks_kl = offsets.ntasks_kl;
   int task_ij = blockIdx.x * blockDim.x + threadIdx.x;
   int task_kl = blockIdx.y * blockDim.y + threadIdx.y;
+  bool active = true;
   if (task_ij >= ntasks_ij || task_kl >= ntasks_kl) {
-    return;
+    task_ij = 0; task_kl = 0;
+    active = false;
   }
   int bas_ij = offsets.bas_ij + task_ij;
   int bas_kl = offsets.bas_kl + task_kl;
@@ -948,6 +978,7 @@ static void GINTint2e_get_veff_ip1_kernel0020(GINTEnvVars envs,
   prim_kl1 = prim_kl + nprim_kl;
   double rw[4];
   int irys;
+  if(active){
   for (ij = prim_ij0; ij < prim_ij1; ++ij) {
     double ai = i_exponent[ij] * 2.0;
     double aj = j_exponent[ij] * 2.0;
@@ -1062,7 +1093,7 @@ static void GINTint2e_get_veff_ip1_kernel0020(GINTEnvVars envs,
         gout5_jz += gx0*gy0*(aj*gz8);
       }
     } }
-
+  }
   int *ao_loc = c_bpcache.ao_loc;
   int i0 = ao_loc[ish];
   int j0 = ao_loc[jsh];
@@ -1133,12 +1164,20 @@ static void GINTint2e_get_veff_ip1_kernel0020(GINTEnvVars envs,
       shell_jy += gout5_jy*d;
       shell_jz += gout5_jz*d;
 
-      atomicAdd(vj+ish*3  , shell_ix);
-      atomicAdd(vj+ish*3+1, shell_iy);
-      atomicAdd(vj+ish*3+2, shell_iz);
-      atomicAdd(vj+jsh*3  , shell_jx);
-      atomicAdd(vj+jsh*3+1, shell_jy);
-      atomicAdd(vj+jsh*3+2, shell_jz);
+      //atomicAdd(vj+ish*3  , shell_ix);
+      //atomicAdd(vj+ish*3+1, shell_iy);
+      //atomicAdd(vj+ish*3+2, shell_iz);
+      //atomicAdd(vj+jsh*3  , shell_jx);
+      //atomicAdd(vj+jsh*3+1, shell_jy);
+      //atomicAdd(vj+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vj+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vj+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vj+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vj+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vj+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vj+jsh*3+2, tx, ty);
     }
     if(vk != NULL) {
       double shell_ix = 0, shell_iy = 0, shell_iz = 0, shell_jx = 0, shell_jy = 0, shell_jz = 0;
@@ -1254,12 +1293,20 @@ static void GINTint2e_get_veff_ip1_kernel0020(GINTEnvVars envs,
       shell_jy += gout5_jy*d;
       shell_jz += gout5_jz*d;
 
-      atomicAdd(vk+ish*3  , shell_ix);
-      atomicAdd(vk+ish*3+1, shell_iy);
-      atomicAdd(vk+ish*3+2, shell_iz);
-      atomicAdd(vk+jsh*3  , shell_jx);
-      atomicAdd(vk+jsh*3+1, shell_jy);
-      atomicAdd(vk+jsh*3+2, shell_jz);
+      //atomicAdd(vk+ish*3  , shell_ix);
+      //atomicAdd(vk+ish*3+1, shell_iy);
+      //atomicAdd(vk+ish*3+2, shell_iz);
+      //atomicAdd(vk+jsh*3  , shell_jx);
+      //atomicAdd(vk+jsh*3+1, shell_jy);
+      //atomicAdd(vk+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vk+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vk+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vk+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vk+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vk+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vk+jsh*3+2, tx, ty);
     }
   }
 }
@@ -1273,8 +1320,10 @@ static void GINTint2e_get_veff_ip1_kernel1000(GINTEnvVars envs,
   int ntasks_kl = offsets.ntasks_kl;
   int task_ij = blockIdx.x * blockDim.x + threadIdx.x;
   int task_kl = blockIdx.y * blockDim.y + threadIdx.y;
+  bool active = true;
   if (task_ij >= ntasks_ij || task_kl >= ntasks_kl) {
-    return;
+    task_ij = 0; task_kl = 0;
+    active = false;
   }
   int bas_ij = offsets.bas_ij + task_ij;
   int bas_kl = offsets.bas_kl + task_kl;
@@ -1339,6 +1388,7 @@ static void GINTint2e_get_veff_ip1_kernel1000(GINTEnvVars envs,
   prim_kl1 = prim_kl + nprim_kl;
   double rw[4];
   int irys;
+  if(active){
   for (ij = prim_ij0; ij < prim_ij1; ++ij) {
     double ai = i_exponent[ij] * 2.0;
     double aj = j_exponent[ij] * 2.0;
@@ -1420,7 +1470,7 @@ static void GINTint2e_get_veff_ip1_kernel1000(GINTEnvVars envs,
         gout2_jz += gx0*gy0*(aj*gz4);
       }
     } }
-
+  }
   int *ao_loc = c_bpcache.ao_loc;
   int i0 = ao_loc[ish];
   int j0 = ao_loc[jsh];
@@ -1464,12 +1514,20 @@ static void GINTint2e_get_veff_ip1_kernel1000(GINTEnvVars envs,
       shell_jy += gout2_jy*d;
       shell_jz += gout2_jz*d;
 
-      atomicAdd(vj+ish*3  , shell_ix);
-      atomicAdd(vj+ish*3+1, shell_iy);
-      atomicAdd(vj+ish*3+2, shell_iz);
-      atomicAdd(vj+jsh*3  , shell_jx);
-      atomicAdd(vj+jsh*3+1, shell_jy);
-      atomicAdd(vj+jsh*3+2, shell_jz);
+      //atomicAdd(vj+ish*3  , shell_ix);
+      //atomicAdd(vj+ish*3+1, shell_iy);
+      //atomicAdd(vj+ish*3+2, shell_iz);
+      //atomicAdd(vj+jsh*3  , shell_jx);
+      //atomicAdd(vj+jsh*3+1, shell_jy);
+      //atomicAdd(vj+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vj+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vj+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vj+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vj+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vj+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vj+jsh*3+2, tx, ty);
     }
     if(vk != NULL) {
       double shell_ix = 0, shell_iy = 0, shell_iz = 0, shell_jx = 0, shell_jy = 0, shell_jz = 0;
@@ -1531,12 +1589,20 @@ static void GINTint2e_get_veff_ip1_kernel1000(GINTEnvVars envs,
       shell_jy += gout2_jy*d;
       shell_jz += gout2_jz*d;
 
-      atomicAdd(vk+ish*3  , shell_ix);
-      atomicAdd(vk+ish*3+1, shell_iy);
-      atomicAdd(vk+ish*3+2, shell_iz);
-      atomicAdd(vk+jsh*3  , shell_jx);
-      atomicAdd(vk+jsh*3+1, shell_jy);
-      atomicAdd(vk+jsh*3+2, shell_jz);
+      //atomicAdd(vk+ish*3  , shell_ix);
+      //atomicAdd(vk+ish*3+1, shell_iy);
+      //atomicAdd(vk+ish*3+2, shell_iz);
+      //atomicAdd(vk+jsh*3  , shell_jx);
+      //atomicAdd(vk+jsh*3+1, shell_jy);
+      //atomicAdd(vk+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vk+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vk+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vk+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vk+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vk+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vk+jsh*3+2, tx, ty);
     }
   }
 }
@@ -1550,8 +1616,10 @@ static void GINTint2e_get_veff_ip1_kernel1010(GINTEnvVars envs,
   int ntasks_kl = offsets.ntasks_kl;
   int task_ij = blockIdx.x * blockDim.x + threadIdx.x;
   int task_kl = blockIdx.y * blockDim.y + threadIdx.y;
+  bool active = true;
   if (task_ij >= ntasks_ij || task_kl >= ntasks_kl) {
-    return;
+    task_ij = 0; task_kl = 0;
+    active = false;
   }
   int bas_ij = offsets.bas_ij + task_ij;
   int bas_kl = offsets.bas_kl + task_kl;
@@ -1654,6 +1722,7 @@ static void GINTint2e_get_veff_ip1_kernel1010(GINTEnvVars envs,
   prim_kl1 = prim_kl + nprim_kl;
   double rw[4];
   int irys;
+  if(active){
   for (ij = prim_ij0; ij < prim_ij1; ++ij) {
     double ai = i_exponent[ij] * 2.0;
     double aj = j_exponent[ij] * 2.0;
@@ -1789,7 +1858,7 @@ static void GINTint2e_get_veff_ip1_kernel1010(GINTEnvVars envs,
         gout8_jz += gx0*gy0*(aj*gz9);
       }
     } }
-
+  }
   int *ao_loc = c_bpcache.ao_loc;
   int i0 = ao_loc[ish];
   int j0 = ao_loc[jsh];
@@ -1883,12 +1952,20 @@ static void GINTint2e_get_veff_ip1_kernel1010(GINTEnvVars envs,
       shell_jy += gout8_jy*d;
       shell_jz += gout8_jz*d;
 
-      atomicAdd(vj+ish*3  , shell_ix);
-      atomicAdd(vj+ish*3+1, shell_iy);
-      atomicAdd(vj+ish*3+2, shell_iz);
-      atomicAdd(vj+jsh*3  , shell_jx);
-      atomicAdd(vj+jsh*3+1, shell_jy);
-      atomicAdd(vj+jsh*3+2, shell_jz);
+      //atomicAdd(vj+ish*3  , shell_ix);
+      //atomicAdd(vj+ish*3+1, shell_iy);
+      //atomicAdd(vj+ish*3+2, shell_iz);
+      //atomicAdd(vj+jsh*3  , shell_jx);
+      //atomicAdd(vj+jsh*3+1, shell_jy);
+      //atomicAdd(vj+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vj+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vj+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vj+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vj+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vj+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vj+jsh*3+2, tx, ty);
     }
     if(vk != NULL) {
       double shell_ix = 0, shell_iy = 0, shell_iz = 0, shell_jx = 0, shell_jy = 0, shell_jz = 0;
@@ -2054,12 +2131,20 @@ static void GINTint2e_get_veff_ip1_kernel1010(GINTEnvVars envs,
       shell_jy += gout8_jy*d;
       shell_jz += gout8_jz*d;
 
-      atomicAdd(vk+ish*3  , shell_ix);
-      atomicAdd(vk+ish*3+1, shell_iy);
-      atomicAdd(vk+ish*3+2, shell_iz);
-      atomicAdd(vk+jsh*3  , shell_jx);
-      atomicAdd(vk+jsh*3+1, shell_jy);
-      atomicAdd(vk+jsh*3+2, shell_jz);
+      //atomicAdd(vk+ish*3  , shell_ix);
+      //atomicAdd(vk+ish*3+1, shell_iy);
+      //atomicAdd(vk+ish*3+2, shell_iz);
+      //atomicAdd(vk+jsh*3  , shell_jx);
+      //atomicAdd(vk+jsh*3+1, shell_jy);
+      //atomicAdd(vk+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vk+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vk+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vk+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vk+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vk+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vk+jsh*3+2, tx, ty);
     }
   }
 }
@@ -2073,8 +2158,10 @@ static void GINTint2e_get_veff_ip1_kernel1100(GINTEnvVars envs,
   int ntasks_kl = offsets.ntasks_kl;
   int task_ij = blockIdx.x * blockDim.x + threadIdx.x;
   int task_kl = blockIdx.y * blockDim.y + threadIdx.y;
+  bool active = true;
   if (task_ij >= ntasks_ij || task_kl >= ntasks_kl) {
-    return;
+    task_ij = 0; task_kl = 0;
+    active = false;
   }
   int bas_ij = offsets.bas_ij + task_ij;
   int bas_kl = offsets.bas_kl + task_kl;
@@ -2175,6 +2262,7 @@ static void GINTint2e_get_veff_ip1_kernel1100(GINTEnvVars envs,
   prim_kl1 = prim_kl + nprim_kl;
   double rw[4];
   int irys;
+  if(active){
   for (ij = prim_ij0; ij < prim_ij1; ++ij) {
     double ai = i_exponent[ij] * 2.0;
     double aj = j_exponent[ij] * 2.0;
@@ -2304,7 +2392,7 @@ static void GINTint2e_get_veff_ip1_kernel1100(GINTEnvVars envs,
         gout8_jz += gx0*gy0*(-gz1+aj*gz7);
       }
     } }
-
+  }
   int *ao_loc = c_bpcache.ao_loc;
   int i0 = ao_loc[ish];
   int j0 = ao_loc[jsh];
@@ -2402,12 +2490,20 @@ static void GINTint2e_get_veff_ip1_kernel1100(GINTEnvVars envs,
       shell_jy += gout8_jy*d;
       shell_jz += gout8_jz*d;
 
-      atomicAdd(vj+ish*3  , shell_ix);
-      atomicAdd(vj+ish*3+1, shell_iy);
-      atomicAdd(vj+ish*3+2, shell_iz);
-      atomicAdd(vj+jsh*3  , shell_jx);
-      atomicAdd(vj+jsh*3+1, shell_jy);
-      atomicAdd(vj+jsh*3+2, shell_jz);
+      //atomicAdd(vj+ish*3  , shell_ix);
+      //atomicAdd(vj+ish*3+1, shell_iy);
+      //atomicAdd(vj+ish*3+2, shell_iz);
+      //atomicAdd(vj+jsh*3  , shell_jx);
+      //atomicAdd(vj+jsh*3+1, shell_jy);
+      //atomicAdd(vj+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vj+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vj+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vj+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vj+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vj+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vj+jsh*3+2, tx, ty);
     }
     if(vk != NULL) {
       double shell_ix = 0, shell_iy = 0, shell_iz = 0, shell_jx = 0, shell_jy = 0, shell_jz = 0;
@@ -2569,12 +2665,20 @@ static void GINTint2e_get_veff_ip1_kernel1100(GINTEnvVars envs,
       shell_jy += gout8_jy*d;
       shell_jz += gout8_jz*d;
 
-      atomicAdd(vk+ish*3  , shell_ix);
-      atomicAdd(vk+ish*3+1, shell_iy);
-      atomicAdd(vk+ish*3+2, shell_iz);
-      atomicAdd(vk+jsh*3  , shell_jx);
-      atomicAdd(vk+jsh*3+1, shell_jy);
-      atomicAdd(vk+jsh*3+2, shell_jz);
+      //atomicAdd(vk+ish*3  , shell_ix);
+      //atomicAdd(vk+ish*3+1, shell_iy);
+      //atomicAdd(vk+ish*3+2, shell_iz);
+      //atomicAdd(vk+jsh*3  , shell_jx);
+      //atomicAdd(vk+jsh*3+1, shell_jy);
+      //atomicAdd(vk+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vk+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vk+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vk+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vk+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vk+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vk+jsh*3+2, tx, ty);
     }
   }
 }
@@ -2588,8 +2692,10 @@ static void GINTint2e_get_veff_ip1_kernel2000(GINTEnvVars envs,
   int ntasks_kl = offsets.ntasks_kl;
   int task_ij = blockIdx.x * blockDim.x + threadIdx.x;
   int task_kl = blockIdx.y * blockDim.y + threadIdx.y;
+  bool active = true;
   if (task_ij >= ntasks_ij || task_kl >= ntasks_kl) {
-    return;
+    task_ij = 0; task_kl = 0;
+    active = false;
   }
   int bas_ij = offsets.bas_ij + task_ij;
   int bas_kl = offsets.bas_kl + task_kl;
@@ -2672,6 +2778,7 @@ static void GINTint2e_get_veff_ip1_kernel2000(GINTEnvVars envs,
   prim_kl1 = prim_kl + nprim_kl;
   double rw[4];
   int irys;
+  if(active){
   for (ij = prim_ij0; ij < prim_ij1; ++ij) {
     double ai = i_exponent[ij] * 2.0;
     double aj = j_exponent[ij] * 2.0;
@@ -2712,8 +2819,6 @@ static void GINTint2e_get_veff_ip1_kernel2000(GINTEnvVars envs,
         double C00x = xij - xi - tmp2 * xijxkl;
         double C00y = yij - yi - tmp2 * yijykl;
         double C00z = zij - zi - tmp2 * zijzkl;
-
-
 
         double gx0 = 1;
         double gy0 = 1;
@@ -2777,7 +2882,7 @@ static void GINTint2e_get_veff_ip1_kernel2000(GINTEnvVars envs,
         gout5_jz += gx0*gy0*(aj*gz6);
       }
     } }
-
+  }
   int *ao_loc = c_bpcache.ao_loc;
   int i0 = ao_loc[ish];
   int j0 = ao_loc[jsh];
@@ -2848,12 +2953,21 @@ static void GINTint2e_get_veff_ip1_kernel2000(GINTEnvVars envs,
       shell_jy += gout5_jy*d;
       shell_jz += gout5_jz*d;
 
-      atomicAdd(vj+ish*3  , shell_ix);
-      atomicAdd(vj+ish*3+1, shell_iy);
-      atomicAdd(vj+ish*3+2, shell_iz);
-      atomicAdd(vj+jsh*3  , shell_jx);
-      atomicAdd(vj+jsh*3+1, shell_jy);
-      atomicAdd(vj+jsh*3+2, shell_jz);
+      //atomicAdd(vj+ish*3  , shell_ix);
+      //atomicAdd(vj+ish*3+1, shell_iy);
+      //atomicAdd(vj+ish*3+2, shell_iz);
+      //atomicAdd(vj+jsh*3  , shell_jx);
+      //atomicAdd(vj+jsh*3+1, shell_jy);
+      //atomicAdd(vj+jsh*3+2, shell_jz);
+
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vj+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vj+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vj+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vj+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vj+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vj+jsh*3+2, tx, ty);
     }
     if(vk != NULL) {
       double shell_ix = 0, shell_iy = 0, shell_iz = 0, shell_jx = 0, shell_jy = 0, shell_jz = 0;
@@ -2969,12 +3083,20 @@ static void GINTint2e_get_veff_ip1_kernel2000(GINTEnvVars envs,
       shell_jy += gout5_jy*d;
       shell_jz += gout5_jz*d;
 
-      atomicAdd(vk+ish*3  , shell_ix);
-      atomicAdd(vk+ish*3+1, shell_iy);
-      atomicAdd(vk+ish*3+2, shell_iz);
-      atomicAdd(vk+jsh*3  , shell_jx);
-      atomicAdd(vk+jsh*3+1, shell_jy);
-      atomicAdd(vk+jsh*3+2, shell_jz);
+      //atomicAdd(vk+ish*3  , shell_ix);
+      //atomicAdd(vk+ish*3+1, shell_iy);
+      //atomicAdd(vk+ish*3+2, shell_iz);
+      //atomicAdd(vk+jsh*3  , shell_jx);
+      //atomicAdd(vk+jsh*3+1, shell_jy);
+      //atomicAdd(vk+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vk+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vk+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vk+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vk+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vk+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vk+jsh*3+2, tx, ty);
     }
   }
 }

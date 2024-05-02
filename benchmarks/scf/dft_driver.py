@@ -19,7 +19,8 @@ import pyscf
 import time
 import argparse
 from pyscf import lib
-from pyscf.dft import rks
+from gpu4pyscf import scf
+from gpu4pyscf.dft import rks
 
 lib.num_threads(8)
 
@@ -63,19 +64,23 @@ def run_dft(filename):
     # set verbose >= 6 for debugging timer
     mol.verbose = 4 #verbose
     mol.max_memory = 40000
-    mf = rks.RKS(mol, xc=xc)
+    if xc == 'hf':
+        mf = scf.RHF(mol)
+    else:
+        mf = rks.RKS(mol, xc=xc)
+        mf.grids.atom_grid = (99,590)
+        mf.chkfile = None
+        prep_time = time.time() - start_time
+        mf.conv_tol = 1e-9
+        mf.nlcgrids.atom_grid = (50,194)
+
     if args.solvent:
         mf = mf.PCM()
         mf.with_solvent.lebedev_order = 29
         mf.with_solvent.method = 'IEF-PCM'
         mf.with_solvent.eps = 78.3553
-    mf.grids.atom_grid = (99,590)
-    mf.chkfile = None
-    prep_time = time.time() - start_time
-    mf.conv_tol = 1e-9
-    mf.nlcgrids.atom_grid = (50,194)
+
     mf.max_cycle = 100
-    print(mf.scf_summary)
     try:
         e_dft = mf.kernel()
         scf_time = time.time() - start_time

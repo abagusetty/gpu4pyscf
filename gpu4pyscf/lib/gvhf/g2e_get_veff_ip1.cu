@@ -27,11 +27,11 @@ static void GINTint2e_get_veff_ip1_kernel(GINTEnvVars envs,
   int ntasks_kl = offsets.ntasks_kl;
   int task_ij = blockIdx.x * blockDim.x + threadIdx.x;
   int task_kl = blockIdx.y * blockDim.y + threadIdx.y;
-
+  bool active = true;
   if (task_ij >= ntasks_ij || task_kl >= ntasks_kl) {
-    return;
+    task_ij = 0; task_kl = 0;
+    active = false;
   }
-
   int * ao_loc = c_bpcache.ao_loc;
   int bas_ij = offsets.bas_ij + task_ij;
   int bas_kl = offsets.bas_kl + task_kl;
@@ -68,7 +68,6 @@ static void GINTint2e_get_veff_ip1_kernel(GINTEnvVars envs,
   double * vk = jk.vk;
   double * dm;
   double s_ix, s_iy, s_iz, s_jx, s_jy, s_jz;
-
   double uw[NROOTS * 2];
   double local_cache[NROOTS * GPU_AO_LMAX + GOUTSIZE];
   memset(local_cache, 0, sizeof(double) * (NROOTS * GPU_AO_LMAX + GOUTSIZE));
@@ -109,7 +108,7 @@ static void GINTint2e_get_veff_ip1_kernel(GINTEnvVars envs,
              shell_jx = 0,
              shell_jy = 0,
              shell_jz = 0;
-
+      if(active){
       for (ij = prim_ij; ij < prim_ij + nprim_ij; ++ij) {
         double ai = i_exponent[ij];
         double aj = j_exponent[ij];
@@ -128,7 +127,7 @@ static void GINTint2e_get_veff_ip1_kernel(GINTEnvVars envs,
           double aijkl = aij + akl;
           double a1 = aij * akl;
           double a0 = a1 / aijkl;
-          double theta = omega > 0.0 ? omega * omega / (omega * omega + a0) : 1.0; 
+          double theta = omega > 0.0 ? omega * omega / (omega * omega + a0) : 1.0;
           a0 *= theta;
           double x = a0 * (xijxkl * xijxkl + yijykl * yijykl + zijzkl * zijzkl);
 
@@ -167,13 +166,21 @@ static void GINTint2e_get_veff_ip1_kernel(GINTEnvVars envs,
           }
         }
       }
-
-      atomicAdd(vj+ish*3  , shell_ix);
-      atomicAdd(vj+ish*3+1, shell_iy);
-      atomicAdd(vj+ish*3+2, shell_iz);
-      atomicAdd(vj+jsh*3  , shell_jx);
-      atomicAdd(vj+jsh*3+1, shell_jy);
-      atomicAdd(vj+jsh*3+2, shell_jz);
+      }
+      //atomicAdd(vj+ish*3  , shell_ix);
+      //atomicAdd(vj+ish*3+1, shell_iy);
+      //atomicAdd(vj+ish*3+2, shell_iz);
+      //atomicAdd(vj+jsh*3  , shell_jx);
+      //atomicAdd(vj+jsh*3+1, shell_jy);
+      //atomicAdd(vj+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vj+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vj+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vj+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vj+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vj+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vj+jsh*3+2, tx, ty);
     }
   } else {
     double d_ik, d_il, d_jk, d_jl;
@@ -184,7 +191,7 @@ static void GINTint2e_get_veff_ip1_kernel(GINTEnvVars envs,
              shell_jx = 0,
              shell_jy = 0,
              shell_jz = 0;
-
+      if(active){
       for (ij = prim_ij; ij < prim_ij + nprim_ij; ++ij) {
         double ai = i_exponent[ij];
         double aj = j_exponent[ij];
@@ -203,7 +210,7 @@ static void GINTint2e_get_veff_ip1_kernel(GINTEnvVars envs,
           double aijkl = aij + akl;
           double a1 = aij * akl;
           double a0 = a1 / aijkl;
-          double theta = omega > 0.0 ? omega * omega / (omega * omega + a0) : 1.0; 
+          double theta = omega > 0.0 ? omega * omega / (omega * omega + a0) : 1.0;
           a0 *= theta;
           double x = a0 * (xijxkl * xijxkl + yijykl * yijykl + zijzkl * zijzkl);
 
@@ -244,13 +251,21 @@ static void GINTint2e_get_veff_ip1_kernel(GINTEnvVars envs,
           }
         }
       }
-
-      atomicAdd(vk+ish*3  , shell_ix);
-      atomicAdd(vk+ish*3+1, shell_iy);
-      atomicAdd(vk+ish*3+2, shell_iz);
-      atomicAdd(vk+jsh*3  , shell_jx);
-      atomicAdd(vk+jsh*3+1, shell_jy);
-      atomicAdd(vk+jsh*3+2, shell_jz);
+      }
+      //atomicAdd(vk+ish*3  , shell_ix);
+      //atomicAdd(vk+ish*3+1, shell_iy);
+      //atomicAdd(vk+ish*3+2, shell_iz);
+      //atomicAdd(vk+jsh*3  , shell_jx);
+      //atomicAdd(vk+jsh*3+1, shell_jy);
+      //atomicAdd(vk+jsh*3+2, shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(shell_ix, vk+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iy, vk+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_iz, vk+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jx, vk+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jy, vk+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(shell_jz, vk+jsh*3+2, tx, ty);
     } else {
       double d_ij, d_kl;
       double j_shell_ix = 0,
@@ -267,7 +282,7 @@ static void GINTint2e_get_veff_ip1_kernel(GINTEnvVars envs,
              k_shell_jy = 0,
              k_shell_jz = 0;
 
-
+      if(active){
       for (ij = prim_ij; ij < prim_ij + nprim_ij; ++ij) {
         double ai = i_exponent[ij];
         double aj = j_exponent[ij];
@@ -286,7 +301,7 @@ static void GINTint2e_get_veff_ip1_kernel(GINTEnvVars envs,
           double aijkl = aij + akl;
           double a1 = aij * akl;
           double a0 = a1 / aijkl;
-          double theta = omega > 0.0 ? omega * omega / (omega * omega + a0) : 1.0; 
+          double theta = omega > 0.0 ? omega * omega / (omega * omega + a0) : 1.0;
           a0 *= theta;
           double x = a0 * (xijxkl * xijxkl + yijykl * yijykl + zijzkl * zijzkl);
 
@@ -336,19 +351,34 @@ static void GINTint2e_get_veff_ip1_kernel(GINTEnvVars envs,
           }
         }
       }
+      }
+      //atomicAdd(vj+ish*3  , j_shell_ix);
+      //atomicAdd(vj+ish*3+1, j_shell_iy);
+      //atomicAdd(vj+ish*3+2, j_shell_iz);
+      //atomicAdd(vj+jsh*3  , j_shell_jx);
+      //atomicAdd(vj+jsh*3+1, j_shell_jy);
+      //atomicAdd(vj+jsh*3+2, j_shell_jz);
+      //atomicAdd(vk+ish*3  , k_shell_ix);
+      //atomicAdd(vk+ish*3+1, k_shell_iy);
+      //atomicAdd(vk+ish*3+2, k_shell_iz);
+      //atomicAdd(vk+jsh*3  , k_shell_jx);
+      //atomicAdd(vk+jsh*3+1, k_shell_jy);
+      //atomicAdd(vk+jsh*3+2, k_shell_jz);
 
-      atomicAdd(vj+ish*3  , j_shell_ix);
-      atomicAdd(vj+ish*3+1, j_shell_iy);
-      atomicAdd(vj+ish*3+2, j_shell_iz);
-      atomicAdd(vj+jsh*3  , j_shell_jx);
-      atomicAdd(vj+jsh*3+1, j_shell_jy);
-      atomicAdd(vj+jsh*3+2, j_shell_jz);
-      atomicAdd(vk+ish*3  , k_shell_ix);
-      atomicAdd(vk+ish*3+1, k_shell_iy);
-      atomicAdd(vk+ish*3+2, k_shell_iz);
-      atomicAdd(vk+jsh*3  , k_shell_jx);
-      atomicAdd(vk+jsh*3+1, k_shell_jy);
-      atomicAdd(vk+jsh*3+2, k_shell_jz);
+      int tx = threadIdx.x;
+      int ty = threadIdx.y;
+      block_reduce_y<THREADSX, THREADSY>(j_shell_ix, vj+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(j_shell_iy, vj+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(j_shell_iz, vj+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(j_shell_jx, vj+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(j_shell_jy, vj+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(j_shell_jz, vj+jsh*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(k_shell_ix, vk+ish*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(k_shell_iy, vk+ish*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(k_shell_iz, vk+ish*3+2, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(k_shell_jx, vk+jsh*3,   tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(k_shell_jy, vk+jsh*3+1, tx, ty);
+      block_reduce_y<THREADSX, THREADSY>(k_shell_jz, vk+jsh*3+2, tx, ty);
     }
   }
 
@@ -365,8 +395,10 @@ GINTint2e_get_veff_ip1_kernel_0000(GINTEnvVars envs,
   int ntasks_kl = offsets.ntasks_kl;
   int task_ij = blockIdx.x * blockDim.x + threadIdx.x;
   int task_kl = blockIdx.y * blockDim.y + threadIdx.y;
+  bool active = true;
   if (task_ij >= ntasks_ij || task_kl >= ntasks_kl) {
-    return;
+    task_ij = 0; task_kl = 0;
+    active = false;
   }
   int bas_ij = offsets.bas_ij + task_ij;
   int bas_kl = offsets.bas_kl + task_kl;
@@ -414,6 +446,7 @@ GINTint2e_get_veff_ip1_kernel_0000(GINTEnvVars envs,
   double gout1 = 0, gout1_prime = 0;
   double gout2 = 0, gout2_prime = 0;
 
+  if(active){
   for (ij = prim_ij; ij < prim_ij + nprim_ij; ++ij) {
     double ai = 2.0 * i_exponent[ij];
     double aj = 2.0 * j_exponent[ij];
@@ -434,13 +467,13 @@ GINTint2e_get_veff_ip1_kernel_0000(GINTEnvVars envs,
       double aijkl = aij + akl;
       double a1 = aij * akl;
       double a0 = a1 / aijkl;
-      double theta = omega > 0.0 ? omega * omega / (omega * omega + a0) : 1.0; 
+      double theta = omega > 0.0 ? omega * omega / (omega * omega + a0) : 1.0;
       a0 *= theta;
       double x = a0 * (xijxkl * xijxkl + yijykl * yijykl + zijzkl * zijzkl);
       //double fac = norm * eij * ekl / (sqrt(aijkl) * a1);
       double fac = norm * eij * ekl * sqrt(a0 / (a1 * a1 * a1));
       double root0, weight0;
-      
+
       if (x < 3.e-7) {
         root0 = 0.5;
         weight0 = 1.;
@@ -484,7 +517,7 @@ GINTint2e_get_veff_ip1_kernel_0000(GINTEnvVars envs,
       gout2_prime += g_0 * g_2 * g_5_prime * aj;
     }
   }
-
+  }
   int nao = jk.nao;
 
   double * __restrict__ dm = jk.dm;
@@ -494,23 +527,40 @@ GINTint2e_get_veff_ip1_kernel_0000(GINTEnvVars envs,
   if(vj != NULL) {
     double coulomb = dm[k + nao * l] * dm[i + nao * j];
 
-    atomicAdd(vj+ish*3  , gout0       * coulomb);
-    atomicAdd(vj+ish*3+1, gout1       * coulomb);
-    atomicAdd(vj+ish*3+2, gout2       * coulomb);
-    atomicAdd(vj+jsh*3  , gout0_prime * coulomb);
-    atomicAdd(vj+jsh*3+1, gout1_prime * coulomb);
-    atomicAdd(vj+jsh*3+2, gout2_prime * coulomb);
+    //atomicAdd(vj+ish*3  , gout0       * coulomb);
+    //atomicAdd(vj+ish*3+1, gout1       * coulomb);
+    //atomicAdd(vj+ish*3+2, gout2       * coulomb);
+    //atomicAdd(vj+jsh*3  , gout0_prime * coulomb);
+    //atomicAdd(vj+jsh*3+1, gout1_prime * coulomb);
+    //atomicAdd(vj+jsh*3+2, gout2_prime * coulomb);
+    int tx = threadIdx.x;
+    int ty = threadIdx.y;
+    block_reduce_y<THREADSX, THREADSY>(gout0       * coulomb, vj+ish*3,   tx, ty);
+    block_reduce_y<THREADSX, THREADSY>(gout1       * coulomb, vj+ish*3+1, tx, ty);
+    block_reduce_y<THREADSX, THREADSY>(gout2       * coulomb, vj+ish*3+2, tx, ty);
+    block_reduce_y<THREADSX, THREADSY>(gout0_prime * coulomb, vj+jsh*3,   tx, ty);
+    block_reduce_y<THREADSX, THREADSY>(gout1_prime * coulomb, vj+jsh*3+1, tx, ty);
+    block_reduce_y<THREADSX, THREADSY>(gout2_prime * coulomb, vj+jsh*3+2, tx, ty);
   }
   if (vk != NULL) {
     double exchange = dm[i + nao * k] * dm[j + nao * l]
                     + dm[i + nao * l] * dm[j + nao * k];
 
-    atomicAdd(vk+ish*3  , gout0       * exchange);
-    atomicAdd(vk+ish*3+1, gout1       * exchange);
-    atomicAdd(vk+ish*3+2, gout2       * exchange);
-    atomicAdd(vk+jsh*3  , gout0_prime * exchange);
-    atomicAdd(vk+jsh*3+1, gout1_prime * exchange);
-    atomicAdd(vk+jsh*3+2, gout2_prime * exchange);
+    //atomicAdd(vk+ish*3  , gout0       * exchange);
+    //atomicAdd(vk+ish*3+1, gout1       * exchange);
+    //atomicAdd(vk+ish*3+2, gout2       * exchange);
+    //atomicAdd(vk+jsh*3  , gout0_prime * exchange);
+    //atomicAdd(vk+jsh*3+1, gout1_prime * exchange);
+    //atomicAdd(vk+jsh*3+2, gout2_prime * exchange);
+
+    int tx = threadIdx.x;
+    int ty = threadIdx.y;
+    block_reduce_y<THREADSX, THREADSY>(gout0       * exchange, vk+ish*3,   tx, ty);
+    block_reduce_y<THREADSX, THREADSY>(gout1       * exchange, vk+ish*3+1, tx, ty);
+    block_reduce_y<THREADSX, THREADSY>(gout2       * exchange, vk+ish*3+2, tx, ty);
+    block_reduce_y<THREADSX, THREADSY>(gout0_prime * exchange, vk+jsh*3,   tx, ty);
+    block_reduce_y<THREADSX, THREADSY>(gout1_prime * exchange, vk+jsh*3+1, tx, ty);
+    block_reduce_y<THREADSX, THREADSY>(gout2_prime * exchange, vk+jsh*3+2, tx, ty);
   }
 
 
