@@ -109,7 +109,7 @@ def contraction(
                              alpha.ctypes.data, a.data.ptr, b.data.ptr,
                              beta.ctypes.data, c.data.ptr, out.data.ptr,
                              ws.data.ptr, ws_size)
-    
+
     return out
 
 import os
@@ -128,7 +128,7 @@ if contract_engine is not None:
         import opt_einsum
         einsum = opt_einsum.contract
     elif contract_engine == 'cuquantum':
-        from cuquantum import contract as einsum # type: ignore
+        from cuquantum import contract as einsum
     elif contract_engine == 'cupy':
         einsum = cupy.einsum
     else:

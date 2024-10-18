@@ -161,8 +161,8 @@ def get_jk(mf_grad, mol=None, dm0=None, hermi=0, with_j=True, with_k=True, omega
 
     nao_cart = intopt.mol.nao
     block_size = with_df.get_blksize(nao=nao_cart)
-
-    intopt = int3c2e.VHFOpt(mol, auxmol, 'int2e')
+    intopt.clear()
+    # rebuild with aosym
     intopt.build(mf.direct_scf_tol, diag_block_with_triu=True, aosym=False,
                  group_size_aux=block_size)#, group_size=block_size)
     if not intopt._mol.cart:
@@ -268,10 +268,8 @@ class Gradients(rhf_grad.Gradients):
     auxbasis_response = True
     get_jk = get_jk
     grad_elec = rhf_grad.grad_elec
-    
-    def check_sanity(self):
-        assert isinstance(self.base, df.df_jk._DFHF)
-    
+    check_sanity = NotImplemented
+
     def get_j(self, mol=None, dm=None, hermi=0):
         vj, _, vjaux, _ = self.get_jk(mol, dm, with_k=False)
         return vj, vjaux

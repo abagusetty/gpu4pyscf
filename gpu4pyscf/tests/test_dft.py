@@ -47,7 +47,7 @@ mol.build()
 mol.verbose = 1
 
 @pytest.mark.smoke
-def test_b3lyp_with_d3bj():
+def test_DFRKS():
     print('-------- DFRKS with D3(BJ) -------')
     from gpu4pyscf.dft import rks
     mf = rks.RKS(mol, xc='b3lyp').density_fit(auxbasis='def2-tzvpp-jkfit')
@@ -56,24 +56,7 @@ def test_b3lyp_with_d3bj():
     mf.conv_tol_cpscf = 1e-8
     mf.disp = 'd3bj'
     e_dft = mf.kernel()
-    assert np.abs(e_dft - -685.0326965348272) < 1e-7
-
-    g = mf.nuc_grad_method().kernel()
-    assert np.abs(cupy.linalg.norm(g) - 0.17498362161082373) < 1e-5
-
-    h = mf.Hessian().kernel()
-    assert np.abs(cupy.linalg.norm(h) - 3.7684319231335377) < 1e-4
-
-@pytest.mark.smoke
-def test_b3lyp_d3bj():
-    print('-------- DFRKS with D3(BJ) -------')
-    from gpu4pyscf.dft import rks
-    mf = rks.RKS(mol, xc='b3lyp-d3bj').density_fit(auxbasis='def2-tzvpp-jkfit')
-    mf.grids.atom_grid = (99,590)
-    mf.conv_tol = 1e-10
-    mf.conv_tol_cpscf = 1e-8
-    e_dft = mf.kernel()
-    assert np.abs(e_dft - -685.0326965348272) < 1e-7
+    assert np.abs(e_dft - -685.0326965348272) < 1e-8
 
     g = mf.nuc_grad_method().kernel()
     assert np.abs(cupy.linalg.norm(g) - 0.17498362161082373) < 1e-5
@@ -91,7 +74,7 @@ def test_DFUKS():
     mf.conv_tol_cpscf = 1e-8
     mf.disp = 'd3bj'
     e_dft = mf.kernel()
-    assert np.abs(e_dft - -685.0326965349493) < 1e-7
+    assert np.abs(e_dft - -685.0326965349493) < 1e-8
 
     g = mf.nuc_grad_method().kernel()
     assert np.abs(cupy.linalg.norm(g) - 0.17498264516108836) < 1e-5
@@ -108,10 +91,24 @@ def test_RKS():
     mf.conv_tol = 1e-12
     mf.disp = 'd3bj'
     e_dft = mf.kernel()
-    assert np.abs(e_dft - -685.0325611822375) < 1e-7
+    assert np.abs(e_dft - -685.0325611822375) < 1e-8
 
     g = mf.nuc_grad_method().kernel()
     assert np.abs(cupy.linalg.norm(g) - 0.1750368231223345) < 1e-6
+
+@pytest.mark.smoke
+def test_UKS():
+    print('--------- UKS with D3(BJ) -------')
+    from gpu4pyscf.dft import uks
+    mf = uks.UKS(mol, xc='b3lyp')
+    mf.grids.atom_grid = (99,590)
+    mf.conv_tol = 1e-12
+    mf.disp = 'd3bj'
+    e_dft = mf.kernel()
+    assert np.abs(e_dft - -685.0325611823603) < 1e-8
+
+    g = mf.nuc_grad_method().kernel()
+    assert np.abs(cupy.linalg.norm(g) - 0.17503584692057772) < 1e-5
 
 @pytest.mark.smoke
 def test_DFRKS_with_SMD():
@@ -124,7 +121,7 @@ def test_DFRKS_with_SMD():
     mf.conv_tol_cpscf = 1e-8
     mf.disp = 'd3bj'
     e_dft = mf.kernel()
-    assert np.abs(e_dft - -685.0578838805443) < 1e-7
+    assert np.abs(e_dft - -685.0578838805443) < 1e-8
 
     g = mf.nuc_grad_method().kernel()
     assert np.abs(cupy.linalg.norm(g) - 0.16804945458657145) < 1e-5
@@ -143,7 +140,7 @@ def test_DFUKS_with_SMD():
     mf.conv_tol_cpscf = 1e-8
     mf.disp = 'd3bj'
     e_dft = mf.kernel()
-    assert np.abs(e_dft - -685.05788388063) < 1e-7
+    assert np.abs(e_dft - -685.05788388063) < 1e-8
 
     g = mf.nuc_grad_method().kernel()
     assert np.abs(cupy.linalg.norm(g) - 0.1680496465773684) < 1e-5

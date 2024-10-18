@@ -34,8 +34,10 @@ __all__ = [
 
 libcupy_helper = load_library('libcupy_helper')
 
+LINEAR_DEP_THR = 1e-12
+
 def prune_small_rho_grids_(ks, mol, dm, grids):
-    rho = ks._numint.get_rho(mol, dm, grids, ks.max_memory, verbose=ks.verbose)
+    rho = ks._numint.get_rho(mol, dm, grids, ks.max_memory)
 
     threshold = ks.small_rho_cutoff
     '''Prune grids if the electron density on the grid is small'''
@@ -48,9 +50,9 @@ def prune_small_rho_grids_(ks, mol, dm, grids):
         rho *= grids.weights
         idx = cupy.abs(rho) > threshold / grids.weights.size
 
+        logger.debug(grids, 'Drop grids %d', grids.weights.size - cupy.count_nonzero(idx))
         grids.coords  = cupy.asarray(grids.coords [idx], order='C')
         grids.weights = cupy.asarray(grids.weights[idx], order='C')
-        logger.debug(grids, 'Drop grids %d', rho.size - grids.weights.size)
         if grids.alignment:
             padding = gen_grid._padding_size(grids.size, grids.alignment)
             logger.debug(ks, 'prune_by_density_: %d padding grids', padding)
@@ -81,8 +83,8 @@ def initialize_grids(ks, mol=None, dm=None):
             # Filter grids the first time setup grids
             ks.grids = prune_small_rho_grids_(ks, ks.mol, dm, ks.grids)
         t0 = logger.timer_debug1(ks, 'setting up grids', *t0)
-
-        if ks.do_nlc() and ks.nlcgrids.coords is None:
+        is_nlc = ks.nlc or ks._numint.libxc.is_nlc(ks.xc)
+        if is_nlc and ks.nlcgrids.coords is None:
             if ks.nlcgrids.coords is None:
                 t0 = logger.init_timer(ks)
                 #ks.nlcgrids.build(with_non0tab=True)
@@ -126,8 +128,8 @@ def get_veff(ks, mol=None, dm=None, dm_last=0, vhf_last=0, hermi=1):
     t0 = logger.init_timer(ks)
     initialize_grids(ks, mol, dm)
 
-    #if hasattr(ks, 'screen_tol') and ks.screen_tol is not None:
-    #    ks.direct_scf_tol = ks.screen_tol
+    if hasattr(ks, 'screen_tol') and ks.screen_tol is not None:
+        ks.direct_scf_tol = ks.screen_tol
     ground_state = getattr(dm, 'ndim', 0) == 2
 
     ni = ks._numint
@@ -136,7 +138,7 @@ def get_veff(ks, mol=None, dm=None, dm_last=0, vhf_last=0, hermi=1):
     else:
         max_memory = ks.max_memory - lib.current_memory()[0]
         n, exc, vxc = ni.nr_rks(mol, ks.grids, ks.xc, dm, max_memory=max_memory)
-        if ks.do_nlc():
+        if ks.nlc or ni.libxc.is_nlc(ks.xc):
             if ni.libxc.is_nlc(ks.xc):
                 xc = ks.xc
             else:
@@ -261,9 +263,8 @@ class KohnShamDFT(rks.KohnShamDFT):
     def dump_flags(self, verbose=None):
         # TODO: add this later
         return
-    
+
     reset = rks.KohnShamDFT.reset
-    do_nlc = rks.KohnShamDFT.do_nlc
 
 hf.KohnShamDFT = KohnShamDFT
 from gpu4pyscf.lib import utils
@@ -272,17 +273,19 @@ class RKS(KohnShamDFT, hf.RHF):
 
     to_gpu = utils.to_gpu
     device = utils.device
+    _keys = {'disp'}
 
-    def __init__(self, mol, xc='LDA,VWN'):
+    def __init__(self, mol, xc='LDA,VWN', disp=None):
         hf.RHF.__init__(self, mol)
         KohnShamDFT.__init__(self, xc)
+        self.disp = disp
 
     def dump_flags(self, verbose=None):
         hf.RHF.dump_flags(self, verbose)
         return KohnShamDFT.dump_flags(self, verbose)
 
     def reset(self, mol=None):
-        hf.SCF.reset(self, mol)
+        super().reset(mol)
         self.grids.reset(mol)
         self.nlcgrids.reset(mol)
         self._numint.gdftopt = None

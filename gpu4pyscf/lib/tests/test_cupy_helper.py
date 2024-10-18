@@ -46,7 +46,8 @@ class KnownValues(unittest.TestCase):
         def aop(x):
             return cupy.dot(a, x.T).T
         x = krylov(aop, b)
-        assert cupy.allclose(cupy.dot(a,x.T)+x.T, b.T, atol=1e-5)
+
+        assert cupy.allclose(cupy.dot(a,x.T)+x.T, b.T)
 
         a = cupy.random.random((10,10)) * 1e-2
         b = cupy.random.random((10))
@@ -54,7 +55,7 @@ class KnownValues(unittest.TestCase):
         def aop(x):
             return cupy.dot(a, x.T).T
         x = krylov(aop, b)
-        assert cupy.allclose(cupy.dot(a,x)+x, b, atol=1e-5)
+        assert cupy.allclose(cupy.dot(a,x)+x, b)
 
     def test_cderi_sparse(self):
         naux = 4

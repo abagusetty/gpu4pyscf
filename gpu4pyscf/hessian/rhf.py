@@ -35,21 +35,14 @@ from pyscf.scf import _vhf
 from gpu4pyscf.scf import _response_functions  # noqa
 # import pyscf.grad.rhf to activate nuc_grad_method method
 from pyscf.grad import rhf  # noqa
-from gpu4pyscf.gto.mole import sort_atoms
 from gpu4pyscf.scf import cphf
-from gpu4pyscf.lib.cupy_helper import (
-    contract, tag_array, print_mem_info, transpose_sum, get_avail_mem)
+from gpu4pyscf.lib.cupy_helper import contract, tag_array, print_mem_info, transpose_sum
 from gpu4pyscf.lib import logger
 from gpu4pyscf.df import int3c2e
 
-GB = 1024*1024*1024
-ALIGNED = 4
-
 def hess_elec(hessobj, mo_energy=None, mo_coeff=None, mo_occ=None,
-              mo1=None, mo_e1=None, h1mo=None,
+              mo1=None, mo_e1=None, h1ao=None,
               atmlst=None, max_memory=4000, verbose=None):
-    ''' Different from PySF, using h1mo instead of h1ao for saving memory
-    '''
     log = logger.new_logger(hessobj, verbose)
     time0 = t1 = (logger.process_clock(), logger.perf_counter())
 
@@ -66,14 +59,21 @@ def hess_elec(hessobj, mo_energy=None, mo_coeff=None, mo_occ=None,
     de2 = hessobj.partial_hess_elec(mo_energy, mo_coeff, mo_occ, atmlst,
                                     max_memory, log)
     t1 = log.timer_debug1('hess elec', *t1)
-    if h1mo is None:
-        h1mo = hessobj.make_h1(mo_coeff, mo_occ, None, atmlst, log)
+    if h1ao is None:
+        h1ao = hessobj.make_h1(mo_coeff, mo_occ, hessobj.chkfile, atmlst, log)
         t1 = log.timer_debug1('making H1', *t1)
     if mo1 is None or mo_e1 is None:
-        mo1, mo_e1 = hessobj.solve_mo1(mo_energy, mo_coeff, mo_occ, h1mo,
+        mo1, mo_e1 = hessobj.solve_mo1(mo_energy, mo_coeff, mo_occ, h1ao,
                                        None, atmlst, max_memory, log)
         t1 = log.timer_debug1('solving MO1', *t1)
-
+    '''
+    if isinstance(h1ao, str):
+        h1ao = lib.chkfile.load(h1ao, 'scf_f1ao')
+        h1ao = dict([(int(k), h1ao[k]) for k in h1ao])
+    if isinstance(mo1, str):
+        mo1 = lib.chkfile.load(mo1, 'scf_mo1')
+        mo1 = dict([(int(k), mo1[k]) for k in mo1])
+    '''
     nao, nmo = mo_coeff.shape
     mocc = cupy.array(mo_coeff[:,mo_occ>0])
     mo_energy = cupy.array(mo_energy)
@@ -89,6 +89,7 @@ def hess_elec(hessobj, mo_energy=None, mo_coeff=None, mo_occ=None,
         tmp = contract('xpq,pi->xiq', s1ao, mocc)
         s1oo = contract('xiq,qj->xij', tmp, mocc)
 
+        #s1oo = cupy.einsum('xpq,pi,qj->xij', s1ao, mocc, mocc)
         s1mo = contract('xij,ip->xpj', s1ao, mo_coeff)
 
         for j0 in range(i0+1):
@@ -97,7 +98,7 @@ def hess_elec(hessobj, mo_energy=None, mo_coeff=None, mo_occ=None,
 # *2 for double occupancy, *2 for +c.c.
             #dm1 = cupy.einsum('ypi,qi->ypq', mo1[ja], mocc)
             #de2_gpu[i0,j0] += cupy.einsum('xpq,ypq->xy', h1ao[ia], dm1) * 4
-            de2[i0,j0] += contract('xpi,ypi->xy', h1mo[ia], mo1[ja]) * 4
+            de2[i0,j0] += contract('xpi,ypi->xy', h1ao[ia], mo1[ja]) * 4
             dm1 = contract('ypi,qi->ypq', mo1[ja], mocc*mo_energy[mo_occ>0])
             de2[i0,j0] -= contract('xpq,ypq->xy', s1mo, dm1) * 4
             de2[i0,j0] -= contract('xpq,ypq->xy', s1oo, mo_e1[ja]) * 2
@@ -315,7 +316,6 @@ def solve_mo1(mf, mo_energy, mo_coeff, mo_occ, h1mo,
             See also the function gen_vind.
     '''
     mol = mf.mol
-    log = logger.new_logger(mf, verbose)
     if atmlst is None: atmlst = range(mol.natm)
 
     nao, nmo = mo_coeff.shape
@@ -331,28 +331,16 @@ def solve_mo1(mf, mo_energy, mo_coeff, mo_occ, h1mo,
         tmp = contract('xij,jo->xio', mat, mocc)
         return contract('xik,ip->xpk', tmp, mo_coeff)
     cupy.get_default_memory_pool().free_all_blocks()
-
-    avail_mem = get_avail_mem()
-    blksize = int(avail_mem*0.4) // (8*3*nao*nao*4) // ALIGNED * ALIGNED
-    blksize = min(32, blksize)
-    log.debug(f'GPU memory {avail_mem/GB:.1f} GB available')
-    log.debug(f'{blksize} atoms in each block CPHF equation')
-
-    # sort atoms to improve the convergence
-    sorted_idx = sort_atoms(mol)
-    atom_groups = []
-    for p0,p1 in lib.prange(0,mol.natm,blksize):
-        blk = sorted_idx[p0:p1]
-        atom_groups.append(blk)
-
+    # TODO: calculate blksize dynamically
+    blksize = 48
     mo1s = [None] * mol.natm
     e1s = [None] * mol.natm
     aoslices = mol.aoslice_by_atom()
-
-    for group in atom_groups:
+    for ia0, ia1 in lib.prange(0, len(atmlst), blksize):
         s1vo = []
         h1vo = []
-        for ia in group:
+        for i0 in range(ia0, ia1):
+            ia = atmlst[i0]
             shl0, shl1, p0, p1 = aoslices[ia]
             s1ao = cupy.zeros((3,nao,nao))
             s1ao[:,p0:p1] += s1a[:,p0:p1]
@@ -360,17 +348,16 @@ def solve_mo1(mf, mo_energy, mo_coeff, mo_occ, h1mo,
             s1vo.append(_ao2mo(s1ao))
             h1vo.append(h1mo[ia])
 
-        log.info(f'Solving CPHF equation for atoms {len(group)}/{mol.natm}')
         h1vo = cupy.vstack(h1vo)
         s1vo = cupy.vstack(s1vo)
         tol = mf.conv_tol_cpscf
-        mo1, e1 = cphf.solve(fx, mo_energy, mo_occ, h1vo, s1vo,
-                             level_shift=level_shift, tol=tol, verbose=verbose)
-
+        mo1, e1 = cphf.solve(fx, mo_energy, mo_occ, h1vo, s1vo, tol=tol, verbose=verbose)
+        # Different from PySCF, mo1 is in AO
         mo1 = mo1.reshape(-1,3,nao,nocc)
         e1 = e1.reshape(-1,3,nocc,nocc)
 
-        for k, ia in enumerate(group):
+        for k in range(ia1-ia0):
+            ia = atmlst[k+ia0]
             mo1s[ia] = mo1[k]
             e1s[ia] = e1[k].reshape(3,nocc,nocc)
         mo1 = e1 = None
@@ -389,10 +376,8 @@ def gen_vind(mf, mo_coeff, mo_occ):
         mo1 = cupy.asarray(mo1)
         mo1 = mo1.reshape(-1,nmo,nocc)
         mo1_mo = contract('npo,ip->nio', mo1, mo_coeff)
-        #dm1 = contract('nio,jo->nij', 2.0*mo1_mo, mocc)
-        #dm1 = dm1 + dm1.transpose(0,2,1)
-        dm1 = mo1_mo.dot(2.0*mocc.T)
-        transpose_sum(dm1)
+        dm1 = contract('nio,jo->nij', 2.0*mo1_mo, mocc)
+        dm1 = dm1 + dm1.transpose(0,2,1)
         dm1 = tag_array(dm1, mo1=mo1_mo, occ_coeff=mocc, mo_occ=mo_occ)
         v1 = vresp(dm1)
         tmp = contract('nij,jo->nio', v1, mocc)
@@ -486,7 +471,8 @@ def gen_hop(hobj, mo_energy=None, mo_coeff=None, mo_occ=None, verbose=None):
                                  max_memory, log)
     de2 += hobj.hess_nuc()
 
-    h1ao_cache = hobj.make_h1(mo_coeff, mo_occ, None, atmlst, log)
+    # Compute H1 integrals and store in hobj.chkfile
+    hobj.make_h1(mo_coeff, mo_occ, hobj.chkfile, atmlst, log)
 
     aoslices = mol.aoslice_by_atom()
     s1a = -mol.intor('int1e_ipovlp', comp=3)
@@ -499,7 +485,8 @@ def gen_hop(hobj, mo_energy=None, mo_coeff=None, mo_occ=None, verbose=None):
         s1ao = 0
         for ia in range(natm):
             shl0, shl1, p0, p1 = aoslices[ia]
-            h1ao += numpy.einsum('x,xij->ij', x[ia], h1ao_cache[ia])
+            h1ao_i = lib.chkfile.load(hobj.chkfile, 'scf_f1ao/%d' % ia)
+            h1ao += numpy.einsum('x,xij->ij', x[ia], h1ao_i)
             s1ao_i = numpy.zeros((3,nao,nao))
             s1ao_i[:,p0:p1] += s1a[:,p0:p1]
             s1ao_i[:,:,p0:p1] += s1a[:,p0:p1].transpose(0,2,1)
@@ -516,7 +503,8 @@ def gen_hop(hobj, mo_energy=None, mo_coeff=None, mo_occ=None, verbose=None):
 
         for ja in range(natm):
             q0, q1 = aoslices[ja][2:]
-            hx[ja] += numpy.einsum('xpq,pq->x', h1ao_cache[ja], dm1) * 4
+            h1ao = lib.chkfile.load(hobj.chkfile, 'scf_f1ao/%s'%ja)
+            hx[ja] += numpy.einsum('xpq,pq->x', h1ao, dm1) * 4
             hx[ja] -= numpy.einsum('xpq,pq->x', s1a[:,q0:q1], dme1[q0:q1]) * 2
             hx[ja] -= numpy.einsum('xpq,qp->x', s1a[:,q0:q1], dme1[:,q0:q1]) * 2
         return hx.ravel()
@@ -526,7 +514,6 @@ def gen_hop(hobj, mo_energy=None, mo_coeff=None, mo_occ=None, verbose=None):
 
 
 def kernel(hessobj, mo_energy=None, mo_coeff=None, mo_occ=None, atmlst=None):
-    cput0 = (logger.process_clock(), logger.perf_counter())
     if mo_energy is None: mo_energy = hessobj.base.mo_energy
     if mo_coeff is None: mo_coeff = hessobj.base.mo_coeff
     if mo_occ is None: mo_occ = hessobj.base.mo_occ
@@ -535,20 +522,16 @@ def kernel(hessobj, mo_energy=None, mo_coeff=None, mo_occ=None, atmlst=None):
     else:
         hessobj.atmlst = atmlst
 
-    if hessobj.verbose >= logger.INFO:
-        hessobj.dump_flags()
-
     de = hessobj.hess_elec(mo_energy, mo_coeff, mo_occ, atmlst=atmlst)
     hessobj.de = de.get() + hessobj.hess_nuc(hessobj.mol, atmlst=atmlst)
     mf = hessobj.base
-    if mf.do_disp():
+    if(hasattr(mf, 'disp') and mf.disp is not None):
         h_disp = hessobj.get_dispersion()
         hessobj.hess_disp = h_disp
         hessobj.hess_mf = hessobj.de
         for k, katm in enumerate(atmlst):
             for l, latm in enumerate(atmlst):
                 hessobj.de[k,l] += h_disp[k,l]
-    logger.timer(hessobj, 'SCF hessian', *cput0)
 
     return hessobj.de
 
@@ -634,27 +617,15 @@ class HessianBase(lib.StreamObject):
         if mol is None: mol = self.mol
         return get_hcore(mol)
 
-    def solve_mo1(self, mo_energy, mo_coeff, mo_occ, h1mo,
+    def solve_mo1(self, mo_energy, mo_coeff, mo_occ, h1ao_or_chkfile,
                   fx=None, atmlst=None, max_memory=4000, verbose=None):
-        return solve_mo1(self.base, mo_energy, mo_coeff, mo_occ, h1mo,
+        return solve_mo1(self.base, mo_energy, mo_coeff, mo_occ, h1ao_or_chkfile,
                          fx, atmlst, max_memory, verbose,
                          max_cycle=self.max_cycle, level_shift=self.level_shift)
 
     def hess_nuc(self, mol=None, atmlst=None):
         if mol is None: mol = self.mol
         return hess_nuc(mol, atmlst)
-
-    def dump_flags(self, verbose=None):
-        log = logger.new_logger(self, verbose)
-        log.info('\n')
-        if hasattr(self.base, 'converged') and not self.base.converged:
-            log.warn('Ground state %s not converged',
-                     self.base.__class__.__name__)
-        log.info('******** %s for %s ********',
-                 self.__class__, self.base.__class__)
-        log.info('Max_memory %d MB (current use %d MB)',
-                 self.max_memory, lib.current_memory()[0])
-        return self
 
     def to_cpu(self):
         mf = self.base.to_cpu()
@@ -674,6 +645,7 @@ class Hessian(HessianBase):
         self.stdout = scf_method.stdout
         self.mol = scf_method.mol
         self.base = scf_method
+        self.chkfile = None #scf_method.chkfile
         self.max_memory = self.mol.max_memory
         self.atmlst = range(self.mol.natm)
         self.de = numpy.zeros((0,0,3,3))  # (A,B,dR_A,dR_B)

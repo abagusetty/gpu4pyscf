@@ -43,7 +43,7 @@ def get_veff(ks_grad, mol=None, dm=None):
         grids.build(with_non0tab=False)
 
     nlcgrids = None
-    if mf.do_nlc():
+    if mf.nlc or ni.libxc.is_nlc(mf.xc):
         if ks_grad.nlcgrids is not None:
             nlcgrids = ks_grad.nlcgrids
         else:
@@ -51,6 +51,8 @@ def get_veff(ks_grad, mol=None, dm=None):
         if nlcgrids.coords is None:
             nlcgrids.build(with_non0tab=False)
 
+    if mf.nlc != '':
+        raise NotImplementedError
     #enabling range-separated hybrids
     omega, alpha, hyb = ni.rsh_and_hybrid_coeff(mf.xc, spin=mol.spin)
 
@@ -61,13 +63,13 @@ def get_veff(ks_grad, mol=None, dm=None):
                 ni, mol, grids, mf.xc, dm,
                 max_memory=max_memory, verbose=ks_grad.verbose)
         #logger.debug1(ks_grad, 'sum(grids response) %s', exc.sum(axis=0))
-        if mf.do_nlc():
+        if mf.nlc or ni.libxc.is_nlc(mf.xc):
             raise NotImplementedError
     else:
         exc, vxc = rks_grad.get_vxc(
                 ni, mol, grids, mf.xc, dm,
                 max_memory=max_memory, verbose=ks_grad.verbose)
-        if mf.do_nlc():
+        if mf.nlc or ni.libxc.is_nlc(mf.xc):
             if ni.libxc.is_nlc(mf.xc):
                 xc = mf.xc
             else:

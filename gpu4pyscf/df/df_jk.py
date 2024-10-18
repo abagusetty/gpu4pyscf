@@ -24,7 +24,7 @@ from pyscf import lib, __config__
 from pyscf.scf import dhf
 from pyscf.df import df_jk, addons
 from gpu4pyscf.lib import logger
-from gpu4pyscf.lib.cupy_helper import contract, take_last2d, transpose_sum, load_library, get_avail_mem, empty_mapped
+from gpu4pyscf.lib.cupy_helper import contract, take_last2d, transpose_sum, load_library, get_avail_mem
 from gpu4pyscf.dft import rks, uks, numint
 from gpu4pyscf.scf import hf, uhf
 from gpu4pyscf.df import df, int3c2e
@@ -52,11 +52,11 @@ def init_workflow(mf, dm0=None):
             rsh_df.build(omega=omega)
         return
 
-    mf.h1e = cupy.asarray(mf.get_hcore(mf.mol))
-    mf.s1e = cupy.asarray(mf.get_ovlp(mf.mol))
     # pre-compute h1e and s1e and cderi for async workflow
     with lib.call_in_background(build_df) as build:
         build()
+        mf.s1e = cupy.asarray(mf.get_ovlp(mf.mol))
+        mf.h1e = cupy.asarray(mf.get_hcore(mf.mol))
         # for DFT object
         if hasattr(mf, '_numint'):
             ni = mf._numint
@@ -262,25 +262,27 @@ def get_jk(dfobj, dms_tag, hermi=1, with_j=True, with_k=True, direct_scf_tol=1e-
     nset = dms.shape[0]
     t1 = t0 = log.init_timer()
     if dfobj._cderi is None:
-        log.debug('Build CDERI ...')
+        log.debug('CDERI not found, build...')
         dfobj.build(direct_scf_tol=direct_scf_tol, omega=omega)
         t1 = log.timer_debug1('init jk', *t0)
 
     assert nao == dfobj.nao
-    vj = vk = None
+    vj = None
+    vk = None
     ao_idx = dfobj.intopt.ao_idx
     dms = take_last2d(dms, ao_idx)
-    dms_shape = dms.shape
+
     rows = dfobj.intopt.cderi_row
     cols = dfobj.intopt.cderi_col
     
     if with_j:
         dm_sparse = dms[:,rows,cols]
         dm_sparse[:, dfobj.intopt.cderi_diag] *= .5
+        vj = cupy.zeros_like(dms)
 
     if with_k:
         vk = cupy.zeros_like(dms)
-    
+
     # SCF K matrix with occ
     if getattr(dms_tag, 'mo_coeff', None) is not None:
         mo_occ = dms_tag.mo_occ
@@ -302,7 +304,6 @@ def get_jk(dfobj, dms_tag, hermi=1, with_j=True, with_k=True, direct_scf_tol=1e-
             if with_j:
                 rhoj = 2.0*dm_sparse.dot(cderi_sparse)
                 vj_packed += cupy.dot(rhoj, cderi_sparse.T)
-            cderi_sparse = rhoj = None
             for i in range(nset):
                 if with_k:
                     rhok = contract('Lji,jk->Lki', cderi, occ_coeff[i])
@@ -310,9 +311,7 @@ def get_jk(dfobj, dms_tag, hermi=1, with_j=True, with_k=True, direct_scf_tol=1e-
                     #cublas.syrk('T', rhok.reshape([-1,nao]), out=vk[i], alpha=1.0, beta=1.0, lower=True)
                     rhok = rhok.reshape([-1,nao])
                     vk[i] += cupy.dot(rhok.T, rhok)
-                rhok = None
         if with_j:
-            vj = cupy.zeros(dms_shape)
             vj[:,rows,cols] = vj_packed
             vj[:,cols,rows] = vj_packed
 
@@ -333,13 +332,12 @@ def get_jk(dfobj, dms_tag, hermi=1, with_j=True, with_k=True, direct_scf_tol=1e-
             vj_sparse = cupy.zeros_like(dm_sparse)
 
         nocc = max([mo1.shape[2] for mo1 in mo1s])
+
         blksize = dfobj.get_blksize(extra=2*nao*nocc)
         for cderi, cderi_sparse in dfobj.loop(blksize=blksize, unpack=with_k):
             if with_j:
                 rhoj = 2.0*dm_sparse.dot(cderi_sparse)
                 vj_sparse += cupy.dot(rhoj, cderi_sparse.T)
-                rhoj = None
-            cderi_sparse = None
             if with_k:
                 iset = 0
                 for occ_coeff, mo1 in zip(occ_coeffs, mo1s):
@@ -349,16 +347,12 @@ def get_jk(dfobj, dms_tag, hermi=1, with_j=True, with_k=True, direct_scf_tol=1e-
                         #contract('Lki,Lkj->ij', rhok, rhok1, alpha=1.0, beta=1.0, out=vk[iset])
                         vk[iset] += cupy.dot(rhok.T, rhok1)
                         iset += 1
-                mo1 = rhok1 = rhok = None
-            cderi = None
-        mo1s = None
+        occ_coeff = rhok1 = rhok = mo1 = None
         if with_j:
-            vj = cupy.zeros(dms_shape)
             vj[:,rows,cols] = vj_sparse
             vj[:,cols,rows] = vj_sparse
         if with_k:
             transpose_sum(vk)
-        vj_sparse = None
     # general K matrix with density matrix
     else:
         if with_j:
@@ -374,7 +368,6 @@ def get_jk(dfobj, dms_tag, hermi=1, with_j=True, with_k=True, direct_scf_tol=1e-
                     #vk[k] += contract('Lki,Lkj->ij', cderi, rhok)
                     vk[k] += cupy.dot(cderi.reshape([-1,nao]).T, rhok)
         if with_j:
-            vj = cupy.zeros(dms_shape)
             vj[:,rows,cols] = vj_sparse
             vj[:,cols,rows] = vj_sparse
         rhok = None

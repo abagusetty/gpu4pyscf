@@ -1,5 +1,6 @@
 GPU plugin for PySCF
 ====================
+[![arXiv](https://img.shields.io/badge/arXiv-2404.09452-b31b1b.svg)](https://arxiv.org/abs/2404.09452)
 ![nightly](https://github.com/pyscf/gpu4pyscf/actions/workflows/nightly_build.yml/badge.svg)
 [![PyPI version](https://badge.fury.io/py/gpu4pyscf-cuda11x.svg)](https://badge.fury.io/py/gpu4pyscf-cuda11x)
 
@@ -9,7 +10,9 @@ Installation
 > [!NOTE]
 > The compiled binary packages support compute capability 6.0 and later (Pascal and later, such as Tesla P100, RTX 10 series and later).
 
-Run ```nvcc --version``` in your terminal to check the installed CUDA toolkit version. Then, choose the proper package based on your CUDA toolkit version.
+Run ```nvidia-smi``` in your terminal to check the installed CUDA version.
+
+Choose the proper package based on your CUDA environment.
 
 | Platform      | Command                               | cutensor (**highly recommended**)|
 ----------------| --------------------------------------|----------------------------------|
@@ -27,13 +30,9 @@ cmake --build build/temp.gpu4pyscf -j 4
 CURRENT_PATH=`pwd`
 export PYTHONPATH="${PYTHONPATH}:${CURRENT_PATH}"
 ```
-Then install cutensor and cupy for acceleration (please switch the versions according to your nvcc version!)
+Then install cutensor for acceleration
 ```sh
-pip3 install cutensor-cu12 cupy-cuda12x
-```
-There shouldn't be cupy or cutensor compilation during pip install process. If you see the following warning at the beginning of a gpu4pyscf job, it implies problems with cupy and cutensor installation (likely a version mismatch, or multiple versions of same package installed).
-```
-<repo_path>/gpu4pyscf/lib/cutensor.py:<line_number>: UserWarning: using cupy as the tensor contraction engine.
+pip3 install cutensor-cu11
 ```
 
 The package also provides multiple dockerfiles in ```dockerfiles```. One can use them as references to create the compilation envrionment.
@@ -60,7 +59,6 @@ Limitations
 - Density fitting scheme up to ~168 atoms with def2-tzvpd basis, bounded by CPU memory;
 - Hessian is unavailable for Direct SCF yet;
 - meta-GGA without density laplacian;
-- Double hybrid functionals are not supported;
 
 Examples
 --------
@@ -128,26 +126,3 @@ Speedup with GPU4PySCF v0.6.0 on A100-80G over Q-Chem 6.1 on 32-cores CPU (Desit
 
 Find more benchmarks in [gpu4pyscf/benchmarks](https://github.com/pyscf/gpu4pyscf/tree/master/benchmarks)
 
-References
----------
-```
-@misc{li2024introducting,
-      title={Introducing GPU-acceleration into the Python-based Simulations of Chemistry Framework}, 
-      author={Rui Li and Qiming Sun and Xing Zhang and Garnet Kin-Lic Chan},
-      year={2024},
-      eprint={2407.09700},
-      archivePrefix={arXiv},
-      primaryClass={physics.comp-ph},
-      url={https://arxiv.org/abs/2407.09700}, 
-}
-
-@misc{wu2024enhancing,
-      title={Enhancing GPU-acceleration in the Python-based Simulations of Chemistry Framework}, 
-      author={Xiaojie Wu and Qiming Sun and Zhichen Pu and Tianze Zheng and Wenzhi Ma and Wen Yan and Xia Yu and Zhengxiao Wu and Mian Huo and Xiang Li and Weiluo Ren and Sheng Gong and Yumin Zhang and Weihao Gao},
-      year={2024},
-      eprint={2404.09452},
-      archivePrefix={arXiv},
-      primaryClass={physics.comp-ph},
-      url={https://arxiv.org/abs/2404.09452}, 
-}
-```

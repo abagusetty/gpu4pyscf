@@ -271,24 +271,6 @@ class KnownValues(unittest.TestCase):
         h = hobj.kernel()
         _check_dft_hessian(mf, h, ix=0,iy=0)
 
-    def test_hessian_rks_wb97m_d3bj(self):
-        print('----------- testing DFRKS, wb97m-d3bj --------')
-        mf = _make_rks(mol_sph, 'wb97m-d3bj')
-        mf.conv_tol_cpscf = 1e-7
-        hobj = mf.Hessian()
-        hobj.set(auxbasis_response=2)
-        h = hobj.kernel()
-        _check_dft_hessian(mf, h, ix=0,iy=0)
-
-    def test_hessian_uks_wb97m_d3bj(self):
-        print('------------- testing DFUKS, wb97m-d3bj ---------')
-        mf = _make_uks(mol_sph, 'wb97m-d3bj')
-        mf.conv_tol_cpscf = 1e-7
-        hobj = mf.Hessian()
-        hobj.set(auxbasis_response=2)
-        h = hobj.kernel()
-        _check_dft_hessian(mf, h, ix=0,iy=0)
-
     def test_hessian_cart(self):
         print('-----testing DF Hessian (cartesian)----')
         mf = _make_rks(mol_cart, 'b3lyp')
@@ -303,21 +285,6 @@ class KnownValues(unittest.TestCase):
         print('-----testing DF Hessian (cartesian)----')
         mf = _make_uks(mol_cart, 'b3lyp')
         mf.conv_tol_cpscf = 1e-7
-        hobj = mf.Hessian()
-        hobj.set(auxbasis_response=2)
-        h = hobj.kernel()
-        _check_dft_hessian(mf, h, ix=0,iy=0)
-        _check_dft_hessian(mf, h, ix=0,iy=1)
-
-    def test_hessian_qz(self):
-        mol = pyscf.M(atom=atom, basis='def2-qzvpp', max_memory=32000, cart=0)
-        mol.build(output='/dev/null')
-        mol.verbose = 1
-
-        mf = scf.RHF(mol).density_fit()
-        mf.conv_tol = 1e-12
-        mf.kernel()
-
         hobj = mf.Hessian()
         hobj.set(auxbasis_response=2)
         h = hobj.kernel()

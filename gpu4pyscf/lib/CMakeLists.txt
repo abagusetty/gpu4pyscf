@@ -16,20 +16,27 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 cmake_minimum_required (VERSION 3.19 FATAL_ERROR) # 3.19 is required by cutlass
-project (gpu4pyscf C CXX CUDA Fortran)
+option(USE_SYCL "Using SYCL backend" ON)
+if (USE_SYCL)
+  project (gpu4pyscf C CXX Fortran)
+else()
+  project (gpu4pyscf C CXX CUDA Fortran)
+endif()
 
 set(CMAKE_C_STANDARD "99")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# For better performance on A100, the option
-# -DCUDA_ARCHITECTURES="70-real;80-real" can be added to cmake command
-if(DEFINED CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES "${CUDA_ARCHITECTURES}")
-else()
-  set(CMAKE_CUDA_ARCHITECTURES "60-real;70-real;80-real;90-real")
+if (NOT USE_SYCL)
+  # For better performance on A100, the option
+  # -DCUDA_ARCHITECTURES="70-real;80-real" can be added to cmake command
+  if(DEFINED CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES "${CUDA_ARCHITECTURES}")
+  else()
+    set(CMAKE_CUDA_ARCHITECTURES "60-real;70-real;80-real;90-real")
+  endif()
+  message("CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
 endif()
-message("CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RELWITHDEBINFO)
@@ -64,16 +71,6 @@ if (BUILD_MARCH_NATIVE)
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native -funroll-loops -ftree-vectorize")
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffast-math -fno-math-errno -fno-strict-overflow")
     endif()
-  endif()
-endif()
-
-option(ENABLE_OPENMP "Compiling C extensions with openmp" ON)
-set(OPENMP_C_PROPERTIES "")
-if(ENABLE_OPENMP)
-  find_package(OpenMP)
-  if(OPENMP_FOUND)
-    set(HAVE_OPENMP 1)
-    set(OPENMP_C_PROPERTIES OpenMP::OpenMP_C)
   endif()
 endif()
 
@@ -122,39 +119,22 @@ if(BUILD_CUTLASS)
   set(cutlass_SOURCE_DIR ${SOURCE_DIR})
 endif()
 
-option(BUILD_GINT "Using gint" ON)
-if(BUILD_GINT)
-  add_subdirectory(gint)
-endif()
-
-option(BUILD_GVHF "Using gvhf" ON)
-if(BUILD_GVHF)
-  add_subdirectory(gvhf)
-endif()
-
-option(BUILD_GDFT "Using gdft" ON)
-if(BUILD_GDFT)
-  add_subdirectory(gdft)
-endif()
-
-option(BUILD_CUPY_HELPER "Using cupy_helper" ON)
-if(BUILD_CUPY_HELPER)
+add_subdirectory(gint)
+add_subdirectory(gvhf)
+add_subdirectory(gdft)
+if (USE_SYCL)
+  add_subdirectory(syclpy_helper)
+else()
   add_subdirectory(cupy_helper)
 endif()
-
-option(BUILD_SOLVENT "Using SMD solvent" ON)
-if(BUILD_SOLVENT)
-  add_subdirectory(solvent)
-endif()
-
-add_subdirectory(gvhf-rys)
+add_subdirectory(solvent)
 
 option(BUILD_LIBXC "Using libxc for DFT" ON)
 if(BUILD_LIBXC)
   include(ExternalProject)
   ExternalProject_Add(libxc
-    GIT_REPOSITORY https://github.com/wxj6000/libxc.git
-    GIT_TAG b225c254c063e1de835a4425115c9a6377478b32
+    GIT_REPOSITORY https://gitlab.com/libxc/libxc.git
+    GIT_TAG 6af8da52125a05e5997fb65751eee7fe4bc2f171
     PREFIX ${PROJECT_BINARY_DIR}/deps
     INSTALL_DIR ${PROJECT_SOURCE_DIR}/deps
     CMAKE_ARGS -DBUILD_SHARED_LIBS=ON -DENABLE_CUDA=ON
@@ -165,4 +145,62 @@ if(BUILD_LIBXC)
             -DENABLE_XHOST:STRING=${BUILD_MARCH_NATIVE}
     CMAKE_CACHE_ARGS -DCMAKE_CUDA_ARCHITECTURES:STRING=${CMAKE_CUDA_ARCHITECTURES}
   )
+endif()
+
+# ---- compilation for dftd3 and dft4
+# 1. build static dependencies
+# 2. build dftd3 and dftd4 shared libs, dftd3 and dftd4 will automatically search their dependencies
+# https://github.com/dftd4/dftd4/blob/3fc00439c6abea2639868b644c52f0920d6c2e22/config/cmake/Findmstore.cmake#L24
+option(BUILD_DFTD3 "Using DFTD3 for DFT" ON)
+if(BUILD_DFTD3)
+  include(ExternalProject)
+  ExternalProject_Add(dftd3_static
+    GIT_REPOSITORY "https://github.com/dftd3/simple-dftd3"
+    GIT_TAG v1.0.0
+    PREFIX ${PROJECT_BINARY_DIR}/deps
+    INSTALL_DIR ${PROJECT_SOURCE_DIR}/deps
+    CMAKE_ARGS -DWITH_OpenMP=OFF
+            -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+            -DCMAKE_INSTALL_LIBDIR:PATH=lib
+            -DCMAKE_CURRENT_SOURCE_DIR:PATH=dftd3
+  )
+
+  include(ExternalProject)
+  ExternalProject_Add(dftd3
+    GIT_REPOSITORY "https://github.com/dftd3/simple-dftd3"
+    GIT_TAG v1.0.0
+    PREFIX ${PROJECT_BINARY_DIR}/deps
+    INSTALL_DIR ${PROJECT_SOURCE_DIR}/deps
+    CMAKE_ARGS -DWITH_OpenMP=OFF -DBUILD_SHARED_LIBS=ON
+            -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+            -DCMAKE_INSTALL_LIBDIR:PATH=lib
+            -DCMAKE_CURRENT_SOURCE_DIR:PATH=dftd3
+  )
+  add_dependencies(dftd3 dftd3_static)
+endif()
+
+option(BUILD_DFTD4 "Using DFTD4 for DFT" ON)
+if(BUILD_DFTD4)
+  include(ExternalProject)
+  ExternalProject_Add(dftd4_static
+    GIT_REPOSITORY "https://github.com/dftd4/dftd4"
+    GIT_TAG v3.6.0
+    PREFIX ${PROJECT_BINARY_DIR}/deps
+    INSTALL_DIR ${PROJECT_SOURCE_DIR}/deps
+    CMAKE_ARGS -DWITH_OpenMP=OFF
+            -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+            -DCMAKE_INSTALL_LIBDIR:PATH=lib
+  )
+
+  include(ExternalProject)
+  ExternalProject_Add(dftd4
+    GIT_REPOSITORY "https://github.com/dftd4/dftd4"
+    GIT_TAG v3.6.0
+    PREFIX ${PROJECT_BINARY_DIR}/deps
+    INSTALL_DIR ${PROJECT_SOURCE_DIR}/deps
+    CMAKE_ARGS -DWITH_OpenMP=OFF -DBUILD_SHARED_LIBS=ON
+            -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+            -DCMAKE_INSTALL_LIBDIR:PATH=lib
+  )
+  add_dependencies(dftd4 dftd4_static)
 endif()

@@ -32,10 +32,7 @@ from gpu4pyscf.lib import logger
 from gpu4pyscf.lib.cupy_helper import dist_matrix, load_library
 
 libdft = lib.load_library('libdft')
-try:
-    libsolvent = load_library('libsolvent')
-except OSError:
-    libsolvent = None
+libsolvent = load_library('libsolvent')
 
 @lib.with_doc(_attach_solvent._for_scf.__doc__)
 def pcm_for_scf(mf, solvent_obj=None, dm=None):

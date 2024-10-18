@@ -21,6 +21,7 @@ from cupy_backends.cuda.libs import cusolver
 from cupy_backends.cuda.libs import cublas
 from cupy.cuda import device
 
+_handle = device.get_cusolver_handle()
 libcusolver = ctypes.CDLL('libcusolver.so')
 
 CUSOLVER_EIG_TYPE_1 = 1
@@ -74,8 +75,7 @@ def eigh(h, s):
     w = cupy.zeros(n)
     A = h.copy()
     B = s.copy()
-    _handle = device.get_cusolver_handle()
-
+    
     # TODO: reuse workspace
     if n in _buffersize:
         lwork = _buffersize[n]
@@ -95,9 +95,6 @@ def eigh(h, s):
             ctypes.byref(lwork)
         )
         lwork = lwork.value
-
-        if status != 0:
-            raise RuntimeError("failed in buffer size")
     
     work = cupy.empty(lwork)
     devInfo = cupy.empty(1, dtype=np.int32)

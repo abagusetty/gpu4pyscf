@@ -60,7 +60,7 @@ def get_veff(ks_grad, mol=None, dm=None):
         grids.build(sort_grids=True)
 
     nlcgrids = None
-    if mf.do_nlc():
+    if mf.nlc or ni.libxc.is_nlc(mf.xc):
         if ks_grad.nlcgrids is not None:
             nlcgrids = ks_grad.nlcgrids
         else:
@@ -74,12 +74,12 @@ def get_veff(ks_grad, mol=None, dm=None):
         exc, vxc_tmp = get_vxc_full_response(ni, mol, grids, mf.xc, dm,
                                          max_memory=max_memory,
                                          verbose=ks_grad.verbose)
-        if mf.do_nlc():
+        if mf.nlc or ni.libxc.is_nlc(mf.xc):
             raise NotImplementedError
     else:
         exc, vxc_tmp = get_vxc(ni, mol, grids, mf.xc, dm,
                            max_memory=max_memory, verbose=ks_grad.verbose)
-        if mf.do_nlc():
+        if mf.nlc or ni.libxc.is_nlc(mf.xc):
             if ni.libxc.is_nlc(mf.xc):
                 xc = mf.xc
             else:
@@ -195,7 +195,7 @@ def get_vxc(ni, mol, grids, xc_code, dms, relativity=0, hermi=1,
     exc = None
     if nset == 1:
         vmat = vmat[0]
-
+        
     # - sign because nabla_X = -nabla_x
     return exc, -cupy.array(vmat)
 

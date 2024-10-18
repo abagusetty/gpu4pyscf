@@ -17,6 +17,7 @@
 
 #include <cuda_runtime.h>
 #include <stdio.h>
+#include "cublas_v2.h"
 #define THREADS       32
 #define BDIM 32
 

@@ -19,27 +19,45 @@
 #set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_50 --ptxas-options=-v -maxrregcount=255")
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
-add_library(gint SHARED 
-  g2e.c
-  pair_data.c
-  bpcache.cu
-  constant.cu
-  nr_fill_ao_ints.cu
-  nr_fill_ao_int3c2e.cu
-  nr_fill_ao_int3c2e_ip1.cu
-  nr_fill_ao_int3c2e_ip2.cu
-  nr_fill_ao_int3c2e_ipip1.cu
-  nr_fill_ao_int3c2e_ipip2.cu
-  nr_fill_ao_int3c2e_ip1ip2.cu
-  nr_fill_ao_int3c2e_ipvip1.cu
-)
+if (USE_SYCL)
+  add_library(gint SHARED 
+    g2e.c
+    pair_data.c
+    bpcache.cpp
+    constant.cpp
+    nr_fill_ao_ints.cpp
+    nr_fill_ao_int3c2e.cpp
+    nr_fill_ao_int3c2e_ip1.cpp
+    nr_fill_ao_int3c2e_ip2.cpp
+    nr_fill_ao_int3c2e_ipip1.cpp
+    nr_fill_ao_int3c2e_ipip2.cpp
+    nr_fill_ao_int3c2e_ip1ip2.cpp
+    nr_fill_ao_int3c2e_ipvip1.cpp
+  )
+else()
+  add_library(gint SHARED 
+    g2e.c
+    pair_data.c
+    bpcache.cu
+    constant.cu
+    nr_fill_ao_ints.cu
+    nr_fill_ao_int3c2e.cu
+    nr_fill_ao_int3c2e_ip1.cu
+    nr_fill_ao_int3c2e_ip2.cu
+    nr_fill_ao_int3c2e_ipip1.cu
+    nr_fill_ao_int3c2e_ipip2.cu
+    nr_fill_ao_int3c2e_ip1ip2.cu
+    nr_fill_ao_int3c2e_ipvip1.cu
+  )
 
+  set_target_properties(gint PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
+    CUDA_SEPARABLE_COMPILATION ON)
+endif()
+  
 #option(BUILD_SHARED_LIBS "build shared libraries" 1)
 #option(ENABLE_STATIC "Enforce static library build" 0)
 #if(ENABLE_STATIC)
 #  set(BUILD_SHARED_LIBS 0)
 #endif()
 
-set_target_properties(gint PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
-  CUDA_SEPARABLE_COMPILATION ON)

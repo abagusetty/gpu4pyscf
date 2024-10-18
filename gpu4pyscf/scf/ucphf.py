@@ -25,21 +25,19 @@ from gpu4pyscf.lib.cupy_helper import krylov
 from gpu4pyscf.lib import logger
 
 def solve(fvind, mo_energy, mo_occ, h1, s1=None,
-          max_cycle=50, tol=1e-7, hermi=False, verbose=logger.WARN,
-          level_shift=0):
+          max_cycle=50, tol=1e-7, hermi=False, verbose=logger.WARN):
 
     if s1 is None:
         return solve_nos1(fvind, mo_energy, mo_occ, h1,
-                          max_cycle, tol, hermi, verbose, level_shift)
+                          max_cycle, tol, hermi, verbose)
     else:
         return solve_withs1(fvind, mo_energy, mo_occ, h1, s1,
-                            max_cycle, tol, hermi, verbose, level_shift)
+                            max_cycle, tol, hermi, verbose)
 kernel = solve
 
 # h1 shape is (:,nvir,nocc)
 def solve_nos1(fvind, mo_energy, mo_occ, h1,
-               max_cycle=20, tol=1e-9, hermi=False, verbose=logger.WARN,
-               level_shift=0):
+               max_cycle=20, tol=1e-9, hermi=False, verbose=logger.WARN):
     '''For field independent basis. First order overlap matrix is zero'''
     log = logger.new_logger(verbose=verbose)
     t0 = (logger.process_clock(), logger.perf_counter())
@@ -52,11 +50,13 @@ def solve_nos1(fvind, mo_energy, mo_occ, h1,
     mo_ea, mo_eb = mo_energy
     e_a = mo_ea[mo_occ[0]==0]
     e_i = mo_ea[mo_occ[0]>0]
-    ea_ai = 1 / (e_a[:,None] + level_shift - e_i)
+    I, A = cupy.meshgrid(e_i, e_a)
+    ea_ai = 1 / (A - I)#cupy.einsum('a,i->ai', e_a, e_i)
 
     e_a = mo_eb[mo_occ[1]==0]
     e_i = mo_eb[mo_occ[1]>0]
-    eb_ai = 1 / (e_a[:,None] + level_shift - e_i)
+    I, A = cupy.meshgrid(e_i, e_a)
+    eb_ai = 1 / (A - I)#cupy.einsum('a,i->ai', e_a, e_i)
 
     e_ai = cupy.hstack([ea_ai.ravel(),eb_ai.ravel()])
 
@@ -66,8 +66,6 @@ def solve_nos1(fvind, mo_energy, mo_occ, h1,
 
     def vind_vo(mo1):
         v = fvind(mo1.reshape(h1.shape)).reshape(h1.shape)
-        if level_shift != 0:
-            v -= mo1 * level_shift
         v *= e_ai
         return v.ravel()
     mo1 = krylov(vind_vo, mo1base.ravel(),
@@ -111,11 +109,13 @@ def solve_withs1(fvind, mo_energy, mo_occ, h1, s1,
     mo_ea, mo_eb = mo_energy
     ea_a = mo_ea[mo_occ[0]==0]
     ei_a = mo_ea[mo_occ[0]>0]
-    eai_a = 1 / (ea_a[:,None] + level_shift - ei_a)
+    I, A = cupy.meshgrid(ei_a, ea_a)
+    eai_a = 1 / (A - I)
 
     ea_b = mo_eb[mo_occ[1]==0]
     ei_b = mo_eb[mo_occ[1]>0]
-    eai_b = 1 / (ea_b[:,None] + level_shift - ei_b)
+    I, A = cupy.meshgrid(ei_b, ea_b)
+    eai_b = 1 / (A - I)
 
     s1_a = s1[0].reshape(-1,nmoa,nocca)
     nset = s1_a.shape[0]
