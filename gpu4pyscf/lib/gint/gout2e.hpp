@@ -17,20 +17,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+ #pragma once
 
-#include "gint.h"
-#include "sycl_device.hpp"
-#include <sycl/sycl.hpp>
-// #include "constant.hpp"
+//  #include "cint2e.hpp"
+ 
+// Template function to be called within a SYCL kernel
+template <int NROOTS>
+void GINTgout2e(GINTEnvVars envs, double* __restrict__ gout, double* __restrict__ g)
+{
+    int nf = envs.nf;
+    int16_t *idx = c_idx4c;
 
+    int16_t *idx_ptr = idx;//.get_multi_ptr();
 
-//extern GINTEnvVars c_envs;
-extern SYCL_EXTERNAL sycl_device_global<BasisProdCache> c_bpcache;
-extern SYCL_EXTERNAL sycl_device_global<int16_t[NFffff*3]> c_idx4c;
+    if (nf > NFffff) {
+        idx_ptr = envs.idx;
+    }
 
-/*
-__constant__ GINTEnvVars c_envs;
-__constant__ BasisProdCache c_bpcache;
-__constant__ int16_t c_idx4c[NFffff*3];
-*/
+    int16_t *idy = idx_ptr + nf;
+    int16_t *idz = idx_ptr + nf * 2;
+    double s;
+    int i, n, ix, iy, iz;
+
+    for (i = 0; i < nf; i++) {
+        ix = idx_ptr[i];
+        iy = idy[i];
+        iz = idz[i];
+        s = gout[i];
+#pragma unroll
+        for (n = 0; n < NROOTS; ++n) {
+            s += g[ix + n] * g[iy + n] * g[iz + n];
+        }
+        gout[i] = s;
+    }
+}
