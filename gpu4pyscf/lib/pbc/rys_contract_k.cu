@@ -21,9 +21,7 @@
 #include "gint/cuda_alloc.cuh"
 #include "gvhf-rys/vhf.cuh"
 #include "gvhf-rys/rys_roots_for_k.cu"
-//#include "gvhf-rys/create_tasks.cu"
 #include "gvhf-rys/rys_contract_k.cuh"
-//#include "pbc.cuh"
 #include "create_tasks.cu"
 
 #ifdef USE_SYCL
@@ -32,7 +30,7 @@ SYCL_EXTERNAL sycl_device_global<GXYZOffset[625]> s_gxyz_offset;
 
 #define GOUT_WIDTH1     81
 
-// gout_pattern = ((li == 0) >> 3) | ((lj == 0) >> 2) | ((lk == 0) >> 1) | (ll == 0);
+// gout_pattern = ((li == 0) << 3) | ((lj == 0) << 2) | ((lk == 0) << 1) | (ll == 0);
 template <int OFFSET>
 __global__ static
 void rys_k_kernel(RysIntEnvVars envs, JKMatrix kmat, BoundsInfo bounds,
@@ -87,13 +85,15 @@ void rys_k_kernel(RysIntEnvVars envs, JKMatrix kmat, BoundsInfo bounds,
     uint32_t *bas_kl_idx = pool + blockIdx.x * QUEUE_DEPTH;
 
     extern __shared__ double shared_memory[];
+    // Task / queue bookkeeping populated by thread 0
     __shared__ int ntasks, pair_ij, pair_kl0;
+    // Per-quartet shell descriptors (set once per pair_ij iteration)
     __shared__ int ish, jsh, cell_j, ish_cell0, jsh_cell0, i0, j0;
+    __shared__ int expi, expj;
+    // Per-quartet geometry / contracted-exponent caches
     __shared__ double ri[3];
     __shared__ double rjri[3];
     __shared__ double aij_cache[2];
-    __shared__ int expi;
-    __shared__ int expj;
 
     const GXYZOffset *gxyz_offsets = p_gxyz_offsets + OFFSET;
     #endif
@@ -120,6 +120,8 @@ void rys_k_kernel(RysIntEnvVars envs, JKMatrix kmat, BoundsInfo bounds,
     int ntiles_l = bounds.ntiles_l;
     int iprim = bounds.iprim;
     int jprim = bounds.jprim;
+    int kprim = bounds.kprim;
+    int lprim = bounds.lprim;
     double *cicj_cache = shared_memory + reserved_shm_size - iprim*jprim;
     int *idx_i = (int*)(shared_memory + reserved_shm_size);
     int *idx_j = idx_i + ntiles_i * 9;
@@ -204,18 +206,9 @@ while (1) {
         }
         for (int task_id = sq_id; task_id < ntasks+sq_id; task_id += nsq_per_block) {
             __syncthreads();
-            int li = bounds.li;
-            int lj = bounds.lj;
-            int lk = bounds.lk;
-            int ll = bounds.ll;
-            int iprim = bounds.iprim;
-            int jprim = bounds.jprim;
-            int kprim = bounds.kprim;
-            int lprim = bounds.lprim;
-            int stride_j = bounds.stride_j;
-            int stride_k = bounds.stride_k;
-            int stride_l = bounds.stride_l;
-            int g_size = bounds.g_size;
+            // li/lj/lk/ll, iprim/jprim/kprim/lprim, stride_j/k/l and g_size
+            // are loop-invariant across task_id and are hoisted out of this loop
+            // (see top of rys_k_kernel). Avoid shadowing here.
 
             uint32_t bas_kl = bas_kl_idx[task_id];
             int ksh = bas_kl / nbas;
@@ -446,24 +439,31 @@ while (1) {
                         int *addr_j = idx_j + goff.joff*3;
                         int *addr_k = idx_k + goff.koff*3;
                         int *addr_l = idx_l + goff.loff*3;
+                        // gout_pattern encodes which of (li,lj,lk,ll) are s-shells (l==0 => nf=1):
+                        //   bit 3 = (li==0), bit 2 = (lj==0), bit 1 = (lk==0), bit 0 = (ll==0)
+                        // inner_dot<I,J,K,L>: per-tile fan-out per shell direction (3 for general,
+                        // 1 for s-shells, since (l+1)*(l+2)/2 == 1 when l==0).
+                        #define DOT_K(I,J,K,L) \
+                            inner_dot<I,J,K,L>(gout, gx, addr_i, addr_j, addr_k, addr_l); break
                         switch (gout_pattern) {
-                        case 0 : inner_dot<3, 3, 3, 3>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 1 : inner_dot<3, 3, 3, 1>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 2 : inner_dot<3, 3, 1, 3>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 3 : inner_dot<3, 3, 1, 1>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 4 : inner_dot<3, 1, 3, 3>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 5 : inner_dot<3, 1, 3, 1>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 6 : inner_dot<3, 1, 1, 3>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 7 : inner_dot<3, 1, 1, 1>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 8 : inner_dot<1, 3, 3, 3>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 9 : inner_dot<1, 3, 3, 1>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 10: inner_dot<1, 3, 1, 3>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 11: inner_dot<1, 3, 1, 1>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 12: inner_dot<1, 1, 3, 3>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 13: inner_dot<1, 1, 3, 1>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 14: inner_dot<1, 1, 1, 3>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
-                        case 15: inner_dot<1, 1, 1, 1>(gout, gx, addr_i, addr_j, addr_k, addr_l); break;
+                        case  0: DOT_K(3,3,3,3);
+                        case  1: DOT_K(3,3,3,1);
+                        case  2: DOT_K(3,3,1,3);
+                        case  3: DOT_K(3,3,1,1);
+                        case  4: DOT_K(3,1,3,3);
+                        case  5: DOT_K(3,1,3,1);
+                        case  6: DOT_K(3,1,1,3);
+                        case  7: DOT_K(3,1,1,1);
+                        case  8: DOT_K(1,3,3,3);
+                        case  9: DOT_K(1,3,3,1);
+                        case 10: DOT_K(1,3,1,3);
+                        case 11: DOT_K(1,3,1,1);
+                        case 12: DOT_K(1,1,3,3);
+                        case 13: DOT_K(1,1,3,1);
+                        case 14: DOT_K(1,1,1,3);
+                        case 15: DOT_K(1,1,1,1);
                         }
+                        #undef DOT_K
                     }
                 }
             }
@@ -632,8 +632,6 @@ static size_t threads_scheme_for_k(int (&threads)[2], BoundsInfo &bounds,
     return buflen;
 }
 
-//extern int rys_k_unrolled(RysIntEnvVars *envs, JKMatrix *kmat, BoundsInfo *bounds, int *pool);
-
 extern "C" {
 int PBC_build_k(double *vk, double *dm, int n_dm, int nao,
                 RysIntEnvVars *envs, int *shls_slice, int shm_size,
@@ -644,6 +642,9 @@ int PBC_build_k(double *vk, double *dm, int n_dm, int nao,
                 float cutoff, uint32_t *pool, int nbas_cell0,
                 int *atm, int natm, int *bas, int nbas, double *env)
 {
+    // atm/natm/nbas are kept in the signature for ABI stability with rsjk.py
+    // but are unused in this entry point. Silence -Wunused-parameter.
+    (void)atm; (void)natm; (void)nbas;
     int ish0 = shls_slice[0];
     int jsh0 = shls_slice[2];
     int ksh0 = shls_slice[4];
@@ -693,17 +694,29 @@ int PBC_build_k(double *vk, double *dm, int n_dm, int nao,
     int *head = (int *)(pool + workers * QUEUE_DEPTH);
     cudaMemset(head, 0, sizeof(int));
 
-    if (1){//!rys_k_unrolled(envs, &kmat, &bounds, pool)) {
-      GXYZOffset* p_gxyz_offset = RYS_make_gxyz_offset(bounds);
-      int gout_pattern = (((li == 0) >> 3) |
-                          ((lj == 0) >> 2) |
-                          ((lk == 0) >> 1) |
-                          ( ll == 0));
-      int threads[2];
-      int cart_idx_size = (ntiles_i+ntiles_j+ntiles_k+ntiles_l)*9;
-      int n_tiles = ntiles_i * ntiles_j * ntiles_k * ntiles_l;
+    // Kernel dispatch. The launch lambda templates on the gxyz-offset partition
+    // (0/256/512), allowing up to 3 staggered kernel launches that together
+    // cover the (ntiles_i*ntiles_j*ntiles_k*ntiles_l) tile space without
+    // exceeding the 256-entry GXYZOffset table.
+    GXYZOffset* p_gxyz_offset = RYS_make_gxyz_offset(bounds);
+    // gout_pattern: 4-bit mask indicating which of (li,lj,lk,ll) are s-shells.
+    //   bit 3 = (li == 0)  -> selects NI=1 in inner_dot<NI,NJ,NK,NL>
+    //   bit 2 = (lj == 0)  -> selects NJ=1
+    //   bit 1 = (lk == 0)  -> selects NK=1
+    //   bit 0 = (ll == 0)  -> selects NL=1
+    // Use LEFT shift to place each boolean into the correct bit position.
+    // (The previous code used `>>` here, which evaluated every bit to 0 except
+    //  bit 0, collapsing dispatch to only cases 0 and 1 and mis-routing every
+    //  quartet with a single s-shell in i/j/k. See switch (gout_pattern) below.)
+    int gout_pattern = (((li == 0) << 3) |
+                        ((lj == 0) << 2) |
+                        ((lk == 0) << 1) |
+                        ( ll == 0));
+    int threads[2];
+    int cart_idx_size = (ntiles_i+ntiles_j+ntiles_k+ntiles_l)*9;
+    int n_tiles = ntiles_i * ntiles_j * ntiles_k * ntiles_l;
 
-      auto launch = [&](auto offset, int tile_chunk) {
+    auto launch = [&](auto offset, int tile_chunk) {
         constexpr int OFF = decltype(offset)::value;
         int buflen = threads_scheme_for_k(threads, bounds, shm_size, tile_chunk);
         int reserved_shm_size = (buflen - cart_idx_size*4)/8;
@@ -713,13 +726,13 @@ int PBC_build_k(double *vk, double *dm, int n_dm, int nao,
         sycl::range<2> cuda_threads(threads[1], threads[0]);
         auto dev_envs = *envs;
         sycl_get_queue()->submit([&](sycl::handler &cgh) {
-          sycl::local_accessor<char, 1> local_acc(sycl::range<1>(buflen), cgh);
-          cgh.parallel_for(sycl::nd_range<2>(blocks * cuda_threads, cuda_threads), [=](auto item) {
-            rys_k_kernel<OFF>(dev_envs, kmat, bounds, bas_mask_idx, Ts_ij_lookup,
-                              nimgs, nimgs_uniq_pair, nbas_cell0, nao,
-                              pool, head, p_gxyz_offset, gout_pattern, reserved_shm_size,
-                              item, GPU4PYSCF_IMPL_SYCL_GET_MULTI_PTR(local_acc));
-          });
+            sycl::local_accessor<char, 1> local_acc(sycl::range<1>(buflen), cgh);
+            cgh.parallel_for(sycl::nd_range<2>(blocks * cuda_threads, cuda_threads), [=](auto item) {
+                rys_k_kernel<OFF>(dev_envs, kmat, bounds, bas_mask_idx, Ts_ij_lookup,
+                                  nimgs, nimgs_uniq_pair, nbas_cell0, nao,
+                                  pool, head, p_gxyz_offset, gout_pattern, reserved_shm_size,
+                                  item, GPU4PYSCF_IMPL_SYCL_GET_MULTI_PTR(local_acc));
+            });
         });
         #else
         dim3 cuda_threads(threads[0], threads[1]);
@@ -728,12 +741,11 @@ int PBC_build_k(double *vk, double *dm, int n_dm, int nao,
             nimgs, nimgs_uniq_pair, nbas_cell0, nao,
             pool, head, p_gxyz_offset, gout_pattern, reserved_shm_size);
         #endif
-      };
+    };
 
-      launch(std::integral_constant<int, 0>{}, 256);
-      if (n_tiles > 256)  launch(std::integral_constant<int, 256>{}, std::min(256, n_tiles - 256));
-      if (n_tiles > 512)  launch(std::integral_constant<int, 512>{}, std::min(256, n_tiles - 512));
-    }
+    launch(std::integral_constant<int,   0>{}, 256);
+    if (n_tiles > 256) launch(std::integral_constant<int, 256>{}, std::min(256, n_tiles - 256));
+    if (n_tiles > 512) launch(std::integral_constant<int, 512>{}, std::min(256, n_tiles - 512));
 
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
