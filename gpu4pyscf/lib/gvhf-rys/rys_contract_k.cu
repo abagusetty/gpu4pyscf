@@ -30,7 +30,7 @@ SYCL_EXTERNAL sycl_device_global<GXYZOffset[625]> s_gxyz_offset;
 
 #define GOUT_WIDTH1     81
 
-// gout_pattern = ((li == 0) >> 3) | ((lj == 0) >> 2) | ((lk == 0) >> 1) | (ll == 0);
+// gout_pattern = ((li == 0) << 3) | ((lj == 0) << 2) | ((lk == 0) << 1) | (ll == 0);
 template <int OFFSET>
 __global__ static
 void rys_k_kernel(RysIntEnvVars envs, JKMatrix kmat, BoundsInfo bounds,
@@ -710,9 +710,13 @@ int RYS_build_k(double *vk, double *dm, int n_dm, int nao,
 
     if (!rys_k_unrolled(envs, &kmat, &bounds, pool)) {
       GXYZOffset* p_gxyz_offset = RYS_make_gxyz_offset(bounds);
-      int gout_pattern = (((li == 0) >> 3) |
-                          ((lj == 0) >> 2) |
-                          ((lk == 0) >> 1) |
+      // gout_pattern: 4-bit s-shell mask used to dispatch inner_dot<NI,NJ,NK,NL>
+      //   bit 3 = (li==0), bit 2 = (lj==0), bit 1 = (lk==0), bit 0 = (ll==0)
+      // Must use LEFT shifts (placing each boolean at the correct bit position);
+      // right shifts would collapse the mask to bit 0 only.
+      int gout_pattern = (((li == 0) << 3) |
+                          ((lj == 0) << 2) |
+                          ((lk == 0) << 1) |
                           ( ll == 0));
       int threads[2];
       int cart_idx_size = (ntiles_i + ntiles_j + ntiles_k + ntiles_l) * 9;
