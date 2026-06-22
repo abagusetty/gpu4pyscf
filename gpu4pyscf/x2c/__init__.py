@@ -12,27 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import hf
-from .hf_lowmem import RHF as LRHF
-from .uhf import UHF
-from .ghf import GHF
-from .rohf import ROHF
-from . import dispersion
-
-def HF(mol, *args):
-    if mol.spin == 0:
-        return hf.RHF(mol, *args)
-    elif mol.nelectron == 1:
-        from .rohf import HF1e
-        return HF1e(mol, *args)
-    else:
-        return UHF(mol, *args)
-
-def RHF(mol, *args):
-    if mol.spin == 0:
-        return hf.RHF(mol, *args)
-    elif mol.nelectron == 1:
-        from .rohf import HF1e
-        return HF1e(mol, *args)
-    else:
-        return ROHF(mol, *args)
+from . import x2c
