@@ -1,0 +1,566 @@
+
+
+--------------------------------------------------------------------------------
+-- Trying 'Ninja' generator
+--------------------------------
+---------------------------
+----------------------
+-----------------
+------------
+-------
+--
+The --no-warn-unused-cli option is deprecated.  Use -Wno-unused-cli instead.
+-- The C compiler identification is IntelLLVM 2026.1.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /opt/intel/oneapi/compiler/2026.1/bin/icx - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- The CXX compiler identification is IntelLLVM 2026.1.1
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /opt/intel/oneapi/compiler/2026.1/bin/icpx - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (0.5s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/runner/dpnp/_cmake_test_compile/build
+--
+-------
+------------
+-----------------
+----------------------
+---------------------------
+--------------------------------
+-- Trying 'Ninja' generator - success
+--------------------------------------------------------------------------------
+
+Configuring Project
+  Working directory:
+    /home/runner/dpnp/_skbuild/linux-x86_64-3.11/cmake-build
+  Command:
+    /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake /home/runner/dpnp -G Ninja -DCMAKE_MAKE_PROGRAM:FILEPATH=/home/runner/sycl-venv/bin/ninja --no-warn-unused-cli -DCMAKE_INSTALL_PREFIX:PATH=/home/runner/dpnp/_skbuild/linux-x86_64-3.11/cmake-install -DPYTHON_VERSION_STRING:STRING=3.11.16 -DSKBUILD:INTERNAL=TRUE -DCMAKE_MODULE_PATH:PATH=/home/runner/sycl-venv/lib/python3.11/site-packages/skbuild/resources/cmake -DPYTHON_EXECUTABLE:PATH=/home/runner/sycl-venv/bin/python -DPYTHON_INCLUDE_DIR:PATH=/opt/hostedtoolcache/Python/3.11.16/x64/include/python3.11 -DPYTHON_LIBRARY:PATH=/opt/hostedtoolcache/Python/3.11.16/x64/lib/libpython3.11.so -DPython_EXECUTABLE:PATH=/home/runner/sycl-venv/bin/python -DPython_ROOT_DIR:PATH=/home/runner/sycl-venv -DPython_FIND_REGISTRY:STRING=NEVER -DPython_INCLUDE_DIR:PATH=/opt/hostedtoolcache/Python/3.11.16/x64/include/python3.11 -DPython_NumPy_INCLUDE_DIRS:PATH=/home/runner/sycl-venv/lib/python3.11/site-packages/numpy/_core/include -DPython3_EXECUTABLE:PATH=/home/runner/sycl-venv/bin/python -DPython3_ROOT_DIR:PATH=/home/runner/sycl-venv -DPython3_FIND_REGISTRY:STRING=NEVER -DPython3_INCLUDE_DIR:PATH=/opt/hostedtoolcache/Python/3.11.16/x64/include/python3.11 -DPython3_NumPy_INCLUDE_DIRS:PATH=/home/runner/sycl-venv/lib/python3.11/site-packages/numpy/_core/include -DCMAKE_MAKE_PROGRAM:FILEPATH=/home/runner/sycl-venv/bin/ninja -DCMAKE_C_COMPILER:PATH=icx -DCMAKE_CXX_COMPILER:PATH=icpx -DDpctl_ROOT=/home/runner/dpctl/dpctl/resources/cmake -DCMAKE_BUILD_TYPE:STRING=Release
+
+The --no-warn-unused-cli option is deprecated.  Use -Wno-unused-cli instead.
+-- The CXX compiler identification is IntelLLVM 2026.1.1
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /opt/intel/oneapi/compiler/2026.1/bin/icpx - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- SYCL Compiler version: 20260101
+-- SYCL_INCLUDE_DIR: /opt/intel/oneapi/compiler/2026.1/include
+-- SYCL_LIBRARY=/opt/intel/oneapi/compiler/2026.1/lib/libsycl.so
+-- MKL_VERSION: 2026.1.0
+-- MKL_ROOT: /opt/intel/oneapi/mkl/2026.1
+-- MKL_ARCH: intel64
+-- MKL_SYCL_LINK: dynamic
+-- MKL_LINK: dynamic
+-- MKL_SYCL_INTERFACE_FULL: intel_ilp64
+-- MKL_INTERFACE_FULL: intel_ilp64
+-- MKL_SYCL_THREADING: tbb_thread
+-- MKL_THREADING: tbb_thread
+-- MKL_SYCL_MPI: None, set to ` intelmpi` by default
+-- MKL_MPI: None, set to ` intelmpi` by default
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_scalapack_ilp64.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_cdft_core.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_intel_ilp64.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_tbb_thread.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_core.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_blacs_intelmpi_ilp64.so
+-- Could NOT find mkl_sycl_distributed_dft for target MKL::MKL_SYCL_DISTRIBUTED_DFT
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_blas.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_lapack.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_dft.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_sparse.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_data_fitting.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_rng.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_stats.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_vm.so
+-- Found /opt/intel/oneapi/tbb/2023.1/lib/intel64/gcc4.8/libtbb.so.12
+-- oneDPL: ONEDPL_PAR_BACKEND=tbb, disable OpenMP backend
+-- Performing Test _fsycl_option
+-- Performing Test _fsycl_option - Success
+-- Looking for C++ include sycl/sycl.hpp
+-- Looking for C++ include sycl/sycl.hpp - found
+-- Adding -fsycl compiler option
+-- Found Python: /opt/hostedtoolcache/Python/3.11.16/x64/include/python3.11 (found suitable version "3.11.16", required range is "3.10...<3.15") found components: Development.Module NumPy Interpreter
+-- pybind11 v3.1.0 
+-- Performing Test HAS_INTEL_IPO
+-- Performing Test HAS_INTEL_IPO - Success
+-- Found Cython: /home/runner/sycl-venv/bin/cython
+-- Found Python: /home/runner/sycl-venv/bin/python (found suitable version "3.11.16", minimum required is "3.10") found components: Interpreter Development.Module
+-- Found Dpctl: /home/runner/dpctl/dpctl/include (found version "0+untagged.1.g3d69291")
+-- Dpctl_INCLUDE_DIR=/home/runner/dpctl/dpctl/include
+-- Found Python: /opt/hostedtoolcache/Python/3.11.16/x64/include/python3.11 (found version "3.11.16") found components: Development.Module
+-- Using dpnp_algo
+-- Using dpnp_algo_utils
+-- Using dpnp_algo_random
+-- Configuring done (6.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/runner/dpnp/_skbuild/linux-x86_64-3.11/cmake-build
+[1/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/src/dpnp_iface_fptr.cpp.o
+[2/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/kernels/dpnp_krnl_arraycreation.cpp.o
+[3/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/src/memory_sycl.cpp.o
+[4/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/kernels/dpnp_krnl_common.cpp.o
+[5/291] Generating CXX source dpnp/tensor/_usmarray.cxx
+FAILED: [code=1] dpnp/tensor/_usmarray.cxx /home/runner/dpnp/_skbuild/linux-x86_64-3.11/cmake-build/dpnp/tensor/_usmarray.cxx 
+cd /home/runner/dpnp/_skbuild/linux-x86_64-3.11/cmake-build/dpnp/tensor && /home/runner/sycl-venv/bin/cython --cplus -t -w "/home/runner/dpnp" /home/runner/dpnp/dpnp/tensor/_usmarray.pyx --output-file /home/runner/dpnp/_skbuild/linux-x86_64-3.11/cmake-build/dpnp/tensor/_usmarray.cxx
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+# *****************************************************************************
+
+# distutils: language = c++
+# cython: language_level=3
+
+cimport dpctl
+        ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pxd:32:8: 'dpctl.pxd' not found
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+    cdef Py_ssize_t * get_strides(self)
+    cdef int get_typenum(self)
+    cdef int get_itemsize(self)
+    cdef int get_flags(self)
+    cdef object get_base(self)
+    cdef dpctl.DPCTLSyclQueueRef get_queue_ref(self) except *
+         ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pxd:106:9: 'DPCTLSyclQueueRef' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+    cdef int get_typenum(self)
+    cdef int get_itemsize(self)
+    cdef int get_flags(self)
+    cdef object get_base(self)
+    cdef dpctl.DPCTLSyclQueueRef get_queue_ref(self) except *
+    cdef dpctl.SyclQueue get_sycl_queue(self)
+         ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pxd:107:9: 'SyclQueue' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+
+import dpctl
+import dpctl.memory as dpmem
+import numpy as np
+
+from dpctl._backend cimport DPCTLSyclUSMRef
+^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:40:0: 'dpctl/_backend.pxd' not found
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+
+import dpctl
+import dpctl.memory as dpmem
+import numpy as np
+
+from dpctl._backend cimport DPCTLSyclUSMRef
+^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:40:0: 'dpctl/_backend/DPCTLSyclUSMRef.pxd' not found
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+import dpctl
+import dpctl.memory as dpmem
+import numpy as np
+
+from dpctl._backend cimport DPCTLSyclUSMRef
+from dpctl._sycl_device_factory cimport _cached_default_device
+^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:41:0: 'dpctl/_sycl_device_factory.pxd' not found
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+import dpctl
+import dpctl.memory as dpmem
+import numpy as np
+
+from dpctl._backend cimport DPCTLSyclUSMRef
+from dpctl._sycl_device_factory cimport _cached_default_device
+^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:41:0: 'dpctl/_sycl_device_factory/_cached_default_device.pxd' not found
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+from ._data_types import bool as dpt_bool
+from ._device import Device
+from ._print import usm_ndarray_repr, usm_ndarray_str
+
+cimport dpctl as c_dpctl
+cimport dpctl.memory as c_dpmem
+        ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:50:8: 'dpctl/memory.pxd' not found
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+# cython: language_level=3
+# cython: linetrace=True
+
+cdef extern from "numpy/npy_no_deprecated_api.h":
+    pass
+from dpctl._sycl_device cimport SyclDevice
+^
+------------------------------------------------------------
+dpnp/tensor/_dlpack.pxd:35:0: 'dpctl/_sycl_device.pxd' not found
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+# cython: language_level=3
+# cython: linetrace=True
+
+cdef extern from "numpy/npy_no_deprecated_api.h":
+    pass
+from dpctl._sycl_device cimport SyclDevice
+^
+------------------------------------------------------------
+dpnp/tensor/_dlpack.pxd:35:0: 'dpctl/_sycl_device/SyclDevice.pxd' not found
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+
+    return (dl_type == DLDeviceType.kDLCPU) and (dl_id == 0)
+
+
+cdef void _validate_and_use_stream(
+    object stream, c_dpctl.SyclQueue self_queue
+                   ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:217:19: 'SyclQueue' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+
+    cdef object get_base(self):
+        """Returns the object owning the USM data addressed by this array"""
+        return self.base_
+
+    cdef c_dpctl.SyclQueue get_sycl_queue(self):
+         ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:620:9: 'SyclQueue' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+                "This array has unexpected memory owner"
+            )
+        mem = <c_dpmem._Memory> self.base_
+        return mem.queue
+
+    cdef c_dpctl.DPCTLSyclQueueRef get_queue_ref(self) except *:
+         ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:629:9: 'DPCTLSyclQueueRef' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+cdef api int UsmNDArray_GetFlags(usm_ndarray arr):
+    """Get flags of array"""
+    return arr.get_flags()
+
+
+cdef api c_dpctl.DPCTLSyclQueueRef UsmNDArray_GetQueueRef(usm_ndarray arr):
+         ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1848:9: 'DPCTLSyclQueueRef' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+    arr._set_writable_flag(flag)
+
+
+cdef api object UsmNDArray_MakeSimpleFromMemory(
+    int nd, const Py_ssize_t *shape, int typenum,
+    c_dpmem._Memory mobj, Py_ssize_t offset, char order
+    ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1871:4: '_Memory' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+
+
+cdef api object UsmNDArray_MakeSimpleFromPtr(
+    size_t nelems,
+    int typenum,
+    c_dpctl.DPCTLSyclUSMRef ptr,
+    ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1902:4: 'DPCTLSyclUSMRef' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+
+cdef api object UsmNDArray_MakeSimpleFromPtr(
+    size_t nelems,
+    int typenum,
+    c_dpctl.DPCTLSyclUSMRef ptr,
+    c_dpctl.DPCTLSyclQueueRef QRef,
+    ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1903:4: 'DPCTLSyclQueueRef' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+cdef api object UsmNDArray_MakeFromPtr(
+    int nd,
+    const Py_ssize_t *shape,
+    int typenum,
+    const Py_ssize_t *strides,
+    c_dpctl.DPCTLSyclUSMRef ptr,
+    ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1941:4: 'DPCTLSyclUSMRef' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+    int nd,
+    const Py_ssize_t *shape,
+    int typenum,
+    const Py_ssize_t *strides,
+    c_dpctl.DPCTLSyclUSMRef ptr,
+    c_dpctl.DPCTLSyclQueueRef QRef,
+    ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1942:4: 'DPCTLSyclQueueRef' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+    cdef object get_base(self):
+        """Returns the object owning the USM data addressed by this array"""
+        return self.base_
+
+    cdef c_dpctl.SyclQueue get_sycl_queue(self):
+        cdef c_dpmem._Memory mem
+             ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:621:13: '_Memory' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+
+    cdef c_dpctl.DPCTLSyclQueueRef get_queue_ref(self) except *:
+        """
+        Returns a copy of DPCTLSyclQueueRef associated with array
+        """
+        cdef c_dpctl.SyclQueue q = self.get_sycl_queue()
+             ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:633:13: 'SyclQueue' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+    cdef c_dpctl.DPCTLSyclQueueRef get_queue_ref(self) except *:
+        """
+        Returns a copy of DPCTLSyclQueueRef associated with array
+        """
+        cdef c_dpctl.SyclQueue q = self.get_sycl_queue()
+        cdef c_dpctl.DPCTLSyclQueueRef QRef = q.get_queue_ref()
+             ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:634:13: 'DPCTLSyclQueueRef' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+        """
+        Returns a copy of DPCTLSyclQueueRef associated with array
+        """
+        cdef c_dpctl.SyclQueue q = self.get_sycl_queue()
+        cdef c_dpctl.DPCTLSyclQueueRef QRef = q.get_queue_ref()
+        cdef c_dpctl.DPCTLSyclQueueRef QRefCopy = NULL
+             ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:635:13: 'DPCTLSyclQueueRef' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+                A view if data copy is not required, and a copy otherwise.
+                If copying is required, it is done by copying from the original
+                allocation device to the host, followed by copying from host
+                to the target device.
+        """
+        cdef c_dpctl.DPCTLSyclQueueRef QRef = NULL
+             ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1153:13: 'DPCTLSyclQueueRef' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+                If copying is required, it is done by copying from the original
+                allocation device to the host, followed by copying from host
+                to the target device.
+        """
+        cdef c_dpctl.DPCTLSyclQueueRef QRef = NULL
+        cdef c_dpmem._Memory arr_buf
+             ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1154:13: '_Memory' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+    if (itemsize < 1):
+        raise ValueError(
+            f"dtype with typenum={typenum} is not supported."
+        )
+    cdef size_t nbytes = (<size_t> itemsize) * nelems
+    cdef c_dpmem._Memory mobj
+         ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1925:9: '_Memory' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+    cdef Py_ssize_t min_disp = 0
+    cdef Py_ssize_t max_disp = 0
+    cdef Py_ssize_t step_ = 0
+    cdef Py_ssize_t dim_ = 0
+    cdef it = 0
+    cdef c_dpmem._Memory mobj
+         ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1971:9: '_Memory' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+        cdef c_dpmem._Memory mem
+        if not isinstance(self.base_, dpctl.memory._Memory):
+            raise InternalUSMArrayError(
+                "This array has unexpected memory owner"
+            )
+        mem = <c_dpmem._Memory> self.base_
+               ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:626:15: '_Memory' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+        d = Device.create_device(target_device)
+
+        _validate_and_use_stream(stream, self.sycl_queue)
+
+        if (d.sycl_context == self.sycl_context):
+            arr_buf = <c_dpmem._Memory> self.usm_data
+                       ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1160:23: '_Memory' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+
+        _validate_and_use_stream(stream, self.sycl_queue)
+
+        if (d.sycl_context == self.sycl_context):
+            arr_buf = <c_dpmem._Memory> self.usm_data
+            QRef = (<c_dpctl.SyclQueue> d.sycl_queue).get_queue_ref()
+                     ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1161:21: 'SyclQueue' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+
+        if (d.sycl_context == self.sycl_context):
+            arr_buf = <c_dpmem._Memory> self.usm_data
+            QRef = (<c_dpctl.SyclQueue> d.sycl_queue).get_queue_ref()
+            view_buffer = c_dpmem._Memory.create_from_usm_pointer_size_qref(
+                <DPCTLSyclUSMRef>arr_buf.get_data_ptr(),
+                 ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1163:17: 'DPCTLSyclUSMRef' is not a type identifier
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+
+        if (d.sycl_context == self.sycl_context):
+            arr_buf = <c_dpmem._Memory> self.usm_data
+            QRef = (<c_dpctl.SyclQueue> d.sycl_queue).get_queue_ref()
+            view_buffer = c_dpmem._Memory.create_from_usm_pointer_size_qref(
+                <DPCTLSyclUSMRef>arr_buf.get_data_ptr(),
+                ^
+------------------------------------------------------------
+dpnp/tensor/_usmarray.pyx:1163:16: Casting temporary Python object to non-numeric non-Python type
+[6/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/kernels/dpnp_krnl_sorting.cpp.o
+[7/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/src/verbose.cpp.o
+[8/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/kernels/dpnp_krnl_random.cpp.o
+[9/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/src/queue_sycl.cpp.o
+[10/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/src/dpnp_random_state.cpp.o
+ninja: build stopped: subcommand failed.
+Traceback (most recent call last):
+  File "/home/runner/sycl-venv/lib/python3.11/site-packages/skbuild/setuptools_wrap.py", line 669, in setup
+    cmkr.make(make_args, install_target=cmake_install_target, env=env)
+  File "/home/runner/sycl-venv/lib/python3.11/site-packages/skbuild/cmaker.py", line 697, in make
+    self.make_impl(clargs=clargs, config=config, source_dir=source_dir, install_target=install_target, env=env)
+  File "/home/runner/sycl-venv/lib/python3.11/site-packages/skbuild/cmaker.py", line 742, in make_impl
+    raise SKBuildError(msg)
+
+An error occurred while building with CMake.
+  Command:
+    /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake --build . --target install --config Release --
+  Install target:
+    install
+  Source directory:
+    /home/runner/dpnp
+  Working directory:
+    /home/runner/dpnp/_skbuild/linux-x86_64-3.11/cmake-build
+Please check the install target is valid and see CMake's output for more information.
+
+[build_locally] Found DPCTL CMake dir: /home/runner/dpctl/dpctl/resources/cmake
+[build_locally] Using CMake args:
+-DCMAKE_C_COMPILER:PATH=icx -DCMAKE_CXX_COMPILER:PATH=icpx -DDpctl_ROOT=/home/runner/dpctl/dpctl/resources/cmake
+[build_locally] Building extensions in-place...
++ /home/runner/sycl-venv/bin/python setup.py build_ext --inplace --generator=Ninja --build-type=Release -- -DCMAKE_C_COMPILER:PATH=icx -DCMAKE_CXX_COMPILER:PATH=icpx -DDpctl_ROOT=/home/runner/dpctl/dpctl/resources/cmake
+Traceback (most recent call last):
+  File "/home/runner/dpnp/scripts/build_locally.py", line 236, in <module>
+    main()
+  File "/home/runner/dpnp/scripts/build_locally.py", line 219, in main
+    build_extension(
+  File "/home/runner/dpnp/scripts/_build_helper.py", line 212, in build_extension
+    run(
+  File "/home/runner/dpnp/scripts/_build_helper.py", line 144, in run
+    subprocess.check_call(
+  File "/opt/hostedtoolcache/Python/3.11.16/x64/lib/python3.11/subprocess.py", line 413, in check_call
+    raise CalledProcessError(retcode, cmd)
+subprocess.CalledProcessError: Command '['/home/runner/sycl-venv/bin/python', 'setup.py', 'build_ext', '--inplace', '--generator=Ninja', '--build-type=Release', '--', '-DCMAKE_C_COMPILER:PATH=icx', '-DCMAKE_CXX_COMPILER:PATH=icpx', '-DDpctl_ROOT=/home/runner/dpctl/dpctl/resources/cmake']' returned non-zero exit status 1.
