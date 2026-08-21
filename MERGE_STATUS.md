@@ -162,3 +162,31 @@ definitions vs dispatcher cases: 12/12 and 11/11 were the expected counts).
 
 Nothing here has been compiled. Treat the whole merge as unverified until it
 builds and the suite is compared against `test_baselines/pre_merge_baseline.txt`.
+
+## Exact resume state (recorded at end of allocation 12473547)
+
+```
+worktree   /home/abagusetty/gpu4pyscf-testing/sycl_merge
+branch     sycl-merge-upstream
+HEAD       8c0ccae   (== sycl)
+MERGE_HEAD 5025fc4   (upstream/master)
+unmerged   36 paths staged as unmerged; all but 2 already resolved on disk
+still conflicted on disk:
+    gpu4pyscf/lib/pbc/contract_int3c2e.cu    7 hunks
+    gpu4pyscf/lib/pbc/unrolled_rys_k.cu     29 hunks
+backup     sycl_merge_backup_1418.tar.gz  (resolved sources, 2.5 MB, excludes .git)
+```
+
+Independently re-verified before the allocation ended: kernel definitions vs
+dispatcher cases are 12/12 in `unrolled_md_j.cu` and 11/11 in
+`unrolled_md_j_4dm.cu`, so the resolver's self-reported regex mishap was
+recovered correctly.
+
+Next session, in order:
+1. finish the 2 pbc files;
+2. global diff-vs-upstream to catch silently dropped upstream content;
+3. port `dpnp_helper.unpack_sparse` to `decompress_and_fill` (see above);
+4. `git add -A && git commit`;
+5. rebuild (~45 min, ECP AOT alone ~47 min);
+6. sweep 2-way, requalify non-green files sequentially, diff against
+   `test_baselines/pre_merge_baseline.txt`.
