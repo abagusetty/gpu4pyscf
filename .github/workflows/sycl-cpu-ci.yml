@@ -40,7 +40,9 @@ on:
     types: [created]
 
 permissions:
-  contents: read
+  # contents: write lets the always-run log step push build/test logs to a
+  # ci-logs-<run_id> branch, since API log download needs repo admin auth.
+  contents: write
   issues: write
   pull-requests: write
 
@@ -166,20 +168,24 @@ jobs:
         run: |
           source /opt/intel/oneapi/setvars.sh --force
           source "$VENV/bin/activate"
+          set -o pipefail; mkdir -p /tmp/logs
           git clone --depth 1 https://github.com/IntelPython/dpctl /home/runner/dpctl
           cd /home/runner/dpctl
-          python scripts/build_locally.py --oneapi
-          pip install --no-build-isolation --no-deps -e .
+          { python scripts/build_locally.py --oneapi &&
+            pip install --no-build-isolation --no-deps -e . &&
+            python -c "import dpctl; print('dpctl OK', dpctl.__version__)" ; } 2>&1 | tee /tmp/logs/20_dpctl_build.log
 
       - name: Build dpnp from source (IntelPython/dpnp master)
         if: steps.stack-cache.outputs.cache-hit != 'true'
         run: |
           source /opt/intel/oneapi/setvars.sh --force
           source "$VENV/bin/activate"
+          set -o pipefail; mkdir -p /tmp/logs
           git clone --depth 1 https://github.com/IntelPython/dpnp /home/runner/dpnp
           cd /home/runner/dpnp
-          python scripts/build_locally.py --oneapi
-          pip install --no-build-isolation --no-deps -e .
+          { python scripts/build_locally.py --oneapi &&
+            pip install --no-build-isolation --no-deps -e . &&
+            python -c "import dpnp; print('dpnp OK', dpnp.__version__)" ; } 2>&1 | tee /tmp/logs/30_dpnp_build.log
 
       - name: Cache ccache (gpu4pyscf C++/SYCL objects)
         uses: actions/cache@v4
@@ -201,16 +207,18 @@ jobs:
         run: |
           source /opt/intel/oneapi/setvars.sh --force
           source "$VENV/bin/activate"
-          python setup_sycl.py build
+          set -o pipefail; mkdir -p /tmp/logs
+          python setup_sycl.py build 2>&1 | tee /tmp/logs/40_gpu4pyscf_build.log
           ccache -s || true
 
       - name: Smoke test - imports and CPU SYCL device visibility
         run: |
           source /opt/intel/oneapi/setvars.sh --force
           source "$VENV/bin/activate"
-          python -c "import dpctl; print('dpctl', dpctl.__version__); [print(d) for d in dpctl.get_devices()]"
-          python -c "import dpnp; a = dpnp.arange(10); assert int(a.sum()) == 45; print('dpnp', dpnp.__version__, 'OK')"
-          python -c "import gpu4pyscf; print('gpu4pyscf import OK')"
+          set -o pipefail; mkdir -p /tmp/logs
+          { python -c "import dpctl; print('dpctl', dpctl.__version__); [print(d) for d in dpctl.get_devices()]" &&
+            python -c "import dpnp; a = dpnp.arange(10); assert int(a.sum()) == 45; print('dpnp', dpnp.__version__, 'OK')" &&
+            python -c "import gpu4pyscf; print('gpu4pyscf import OK')" ; } 2>&1 | tee /tmp/logs/50_smoke.log
 
       - name: scf unit tests (smoke, partial completion expected)
         continue-on-error: true
@@ -218,8 +226,9 @@ jobs:
         run: |
           source /opt/intel/oneapi/setvars.sh --force
           source "$VENV/bin/activate"
+          set -o pipefail; mkdir -p /tmp/logs
           python -m pytest gpu4pyscf/scf/tests/ -v -x --timeout=900 \
-            --durations=25 --continue-on-collection-errors
+            --durations=25 --continue-on-collection-errors 2>&1 | tee /tmp/logs/60_pytest_scf.log
 
       - name: df unit tests (smoke, partial completion expected)
         continue-on-error: true
@@ -227,8 +236,9 @@ jobs:
         run: |
           source /opt/intel/oneapi/setvars.sh --force
           source "$VENV/bin/activate"
+          set -o pipefail; mkdir -p /tmp/logs
           python -m pytest gpu4pyscf/df/tests/ -v -x --timeout=900 \
-            --durations=25 --continue-on-collection-errors
+            --durations=25 --continue-on-collection-errors 2>&1 | tee /tmp/logs/70_pytest_df.log
 
       - name: dft unit tests (smoke, partial completion expected)
         continue-on-error: true
@@ -236,14 +246,20 @@ jobs:
         run: |
           source /opt/intel/oneapi/setvars.sh --force
           source "$VENV/bin/activate"
+          set -o pipefail; mkdir -p /tmp/logs
           python -m pytest gpu4pyscf/dft/tests/ -v -x --timeout=900 \
-            --durations=25 --continue-on-collection-errors
+            --durations=25 --continue-on-collection-errors 2>&1 | tee /tmp/logs/80_pytest_dft.log
 
-      - name: Upload build logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sycl-cpu-build-logs
-          path: |
-            build/
-          retention-days: 7
+      - name: Publish logs to a ci-logs branch (readable without API auth)
+        if: always()
+        run: |
+          mkdir -p /tmp/logs /tmp/ci-logs && cd /tmp/ci-logs
+          for f in /tmp/logs/*.log; do
+            [ -e "$f" ] && tail -n 1200 "$f" > "$(basename "$f")"
+          done
+          ls -la
+          git init -q -b main .
+          git config user.email "ci@github-runner" && git config user.name "sycl-cpu-ci logs"
+          git add -A
+          git commit -q -m "logs for run ${{ github.run_id }} (attempt ${{ github.run_attempt }}) sha ${{ github.sha }}" --allow-empty
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" HEAD:refs/heads/ci-logs-${{ github.run_id }}
