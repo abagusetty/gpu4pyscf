@@ -98,7 +98,7 @@ jobs:
             intel-oneapi-compiler-fortran \
             intel-oneapi-mkl-devel \
             intel-oneapi-tbb-devel \
-            intel-oneapi-dpl-devel \
+            intel-oneapi-libdpstd-devel \
             intel-oneapi-runtime-opencl \
             intel-oneapi-runtime-dpcpp-cpp \
             ocl-icd-opencl-dev clinfo \
