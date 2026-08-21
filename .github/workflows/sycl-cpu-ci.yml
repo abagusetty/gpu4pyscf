@@ -203,6 +203,11 @@ jobs:
 
       - name: Build gpu4pyscf (SYCL backend, JIT spir64, CPU-runnable)
         env:
+          # For sub-builds (ExchCXX ExternalProject etc.) that would otherwise
+          # fall back to /usr/bin/cc, which cannot compile -fsycl code.
+          CC: icx
+          CXX: icpx
+          FC: ifx
           CMAKE_CONFIGURE_ARGS: >-
             -DCMAKE_CXX_COMPILER=icpx -DCMAKE_C_COMPILER=icx
             -DCMAKE_Fortran_COMPILER=ifx -DUSE_SYCL=ON

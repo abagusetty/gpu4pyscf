@@ -324,6 +324,10 @@ if(BUILD_LIBXC)
         CMAKE_ARGS
         -DCMAKE_BUILD_TYPE=Release
         -DBUILD_SHARED_LIBS=ON
+        # ExternalProject does not inherit the parent's compiler choice; without
+        # this the inner configure falls back to /usr/bin/c++ (no -fsycl).
+        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DEXCHCXX_ENABLE_SYCL=ON
         -DEXCHCXX_SYCL_TARGET=${GPU4PYSCF_EXCHCXX_SYCL_TARGET}
         -DEXCHCXX_ENABLE_TESTS=OFF
