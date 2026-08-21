@@ -26,7 +26,9 @@ name: SYCL CPU CI
 on:
   workflow_dispatch: {}
   push:
-    branches: [sycl]
+    # sycl-cpu-ci is the CI development branch itself, so workflow changes
+    # self-test on push without needing a PR.
+    branches: [sycl, sycl-cpu-ci]
   pull_request:
     branches: [sycl]
   issue_comment:
