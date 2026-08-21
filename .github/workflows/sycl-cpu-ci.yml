@@ -2,9 +2,14 @@ name: SYCL CPU CI
 
 # Sanity-verifies the SYCL port on a CPU-only GitHub-hosted runner using the
 # Intel OpenCL CPU device (no GPU present, none needed). dpctl and dpnp are
-# built from source (dpnp from the abagusetty fork's sparse branch, which
-# gpu4pyscf depends on) against the same oneAPI toolkit, so the SYCL ABI stays
-# in lockstep with what gpu4pyscf/lib expects.
+# built from source at their latest upstream (IntelPython) commits against the
+# same oneAPI toolkit, so the SYCL ABI stays in lockstep with what
+# gpu4pyscf/lib expects.
+#
+# NOTE: gpu4pyscf's local dev setup uses a sparse-solvers dpnp fork
+# (abagusetty/dpnp, feature-sparse-linalg-solvers). This CI deliberately
+# builds upstream IntelPython/dpnp instead, so a couple of sparse-dependent
+# tests may fail here — that is acceptable for this CI.
 #
 # Production builds AOT-compile for Intel PVC; that cannot run here, so the
 # build passes -DGPU4PYSCF_SYCL_AOT=OFF (see gpu4pyscf/lib/CMakeLists.txt) to
@@ -52,6 +57,11 @@ env:
   CCACHE_DIR: "/home/runner/.ccache"
   CCACHE_MAXSIZE: "3G"
   VENV: "/home/runner/sycl-venv"
+  # The SYCL port is used via PYTHONPATH, not pip-installed: `pip install .`
+  # would run the CUDA setup.py, and the vendored cupy/cupyx shims live under
+  # <repo>/gpu4pyscf/, which must itself be on the path (same layout the
+  # production Aurora environment uses).
+  PYTHONPATH: "${{ github.workspace }}:${{ github.workspace }}/gpu4pyscf"
 
 jobs:
   build-and-test:
@@ -129,7 +139,7 @@ jobs:
         id: stack
         run: |
           echo "dpctl_sha=$(git ls-remote https://github.com/IntelPython/dpctl HEAD | cut -f1)" >> "$GITHUB_OUTPUT"
-          echo "dpnp_sha=$(git ls-remote https://github.com/abagusetty/dpnp refs/heads/feature-sparse-linalg-solvers | cut -f1)" >> "$GITHUB_OUTPUT"
+          echo "dpnp_sha=$(git ls-remote https://github.com/IntelPython/dpnp HEAD | cut -f1)" >> "$GITHUB_OUTPUT"
           echo "oneapi_ver=$(dpkg-query -W -f='${Version}' intel-oneapi-compiler-dpcpp-cpp)" >> "$GITHUB_OUTPUT"
 
       - name: Cache dpctl/dpnp stack (venv + source builds)
@@ -161,13 +171,12 @@ jobs:
           python scripts/build_locally.py --oneapi
           pip install --no-build-isolation --no-deps -e .
 
-      - name: Build dpnp from source (abagusetty/dpnp feature-sparse-linalg-solvers)
+      - name: Build dpnp from source (IntelPython/dpnp master)
         if: steps.stack-cache.outputs.cache-hit != 'true'
         run: |
           source /opt/intel/oneapi/setvars.sh --force
           source "$VENV/bin/activate"
-          git clone --depth 1 --branch feature-sparse-linalg-solvers \
-            https://github.com/abagusetty/dpnp /home/runner/dpnp
+          git clone --depth 1 https://github.com/IntelPython/dpnp /home/runner/dpnp
           cd /home/runner/dpnp
           python scripts/build_locally.py --oneapi
           pip install --no-build-isolation --no-deps -e .
@@ -194,11 +203,6 @@ jobs:
           source "$VENV/bin/activate"
           python setup_sycl.py build
           ccache -s || true
-
-      - name: Install gpu4pyscf into the venv
-        run: |
-          source "$VENV/bin/activate"
-          pip install --no-build-isolation --no-deps -e .
 
       - name: Smoke test - imports and CPU SYCL device visibility
         run: |
