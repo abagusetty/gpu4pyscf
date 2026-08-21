@@ -8,7 +8,13 @@ Written 2026-08-21 ~14:20 CDT, near the end of a 6 h PBS allocation
 **Step 1 — DONE.** `fix/sycl-create-tasks-barrier` merged into `sycl` as a clean
 fast-forward (12 commits). `sycl` == that branch, nothing to reconcile.
 
-**Step 2 — IN PROGRESS.** `upstream/master` merged into branch
+**Step 2 — RESOLVED AND COMMITTED** as `24d0aaf` on branch
+`sycl-merge-upstream` (all 43 files / 634 hunks; zero conflict markers; tree
+clean). NOT built, NOT tested.
+
+Original in-progress note follows for context.
+
+**Step 2 — was in progress.** `upstream/master` merged into branch
 `sycl-merge-upstream`, in a git worktree at
 `/home/abagusetty/gpu4pyscf-testing/sycl_merge` (shared Lustre, so it survives a
 node change; `MERGE_HEAD` and the index are intact and the merge can simply be
@@ -190,3 +196,28 @@ Next session, in order:
 5. rebuild (~45 min, ECP AOT alone ~47 min);
 6. sweep 2-way, requalify non-green files sequentially, diff against
    `test_baselines/pre_merge_baseline.txt`.
+
+
+## UPDATE at end of allocation: merge is committed
+
+`sycl-merge-upstream` = `24d0aaf`, a real merge commit of `upstream/master`
+(`5025fc4`) into `sycl` (`8c0ccae`). Working tree clean, no conflict markers
+anywhere. The backup tarball is now redundant but harmless.
+
+**A fourth silent-drop was found after the notes above were written**: a
+`template <int OFFSET>` line, present in HEAD and absent from the merged tree,
+outside any conflict marker, in both `pbc/rys_contract_j.cu` and
+`pbc/rys_contract_k.cu`. Those kernels would not have compiled. Repaired.
+
+That makes four independent instances of git's 3-way merge dropping content
+with no marker. **The global diff-vs-upstream pass is not optional.**
+
+One more item flagged by a resolver, left alone deliberately: in
+`pbc/contract_int3c2e.cu`'s `contract_int3c2e_auxvec_kernel`, an auto-merged
+region still uses the older `fac` / `ish_cell0<jsh_cell0 -> fac=0` symmetry
+handling rather than upstream's `continue`-based simplification. Functionally
+equivalent and block-uniform (no hang risk), but not upstream's newest form —
+worth re-syncing during the verification pass.
+
+Next session starts at step 2 of the ordered list above (global diff), then
+`unpack_sparse`, then build, then the test comparison.
