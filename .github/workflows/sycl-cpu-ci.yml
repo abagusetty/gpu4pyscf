@@ -144,9 +144,12 @@ jobs:
           echo "dpnp_sha=$(git ls-remote https://github.com/IntelPython/dpnp HEAD | cut -f1)" >> "$GITHUB_OUTPUT"
           echo "oneapi_ver=$(dpkg-query -W -f='${Version}' intel-oneapi-compiler-dpcpp-cpp)" >> "$GITHUB_OUTPUT"
 
-      - name: Cache dpctl/dpnp stack (venv + source builds)
+      - name: Restore dpctl/dpnp stack cache (venv + source builds)
         id: stack-cache
-        uses: actions/cache@v4
+        # Explicit restore/save split: plain actions/cache only saves when the
+        # whole job succeeds, so iterating on later steps kept losing the
+        # ~45 min dpnp build. The save step below runs right after the builds.
+        uses: actions/cache/restore@v4
         with:
           path: |
             /home/runner/sycl-venv
@@ -193,8 +196,18 @@ jobs:
             pip install --no-build-isolation --no-deps . &&
             cd /tmp && python -c "import dpnp; print('dpnp OK', dpnp.__version__)" ; } 2>&1 | tee /tmp/logs/30_dpnp_build.log
 
-      - name: Cache ccache (gpu4pyscf C++/SYCL objects)
-        uses: actions/cache@v4
+      - name: Save dpctl/dpnp stack cache
+        if: steps.stack-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /home/runner/sycl-venv
+            /home/runner/dpctl
+            /home/runner/dpnp
+          key: sycl-stack-v1-${{ runner.os }}-py311-oneapi${{ steps.stack.outputs.oneapi_ver }}-dpctl${{ steps.stack.outputs.dpctl_sha }}-dpnp${{ steps.stack.outputs.dpnp_sha }}
+
+      - name: Restore ccache (gpu4pyscf C++/SYCL objects)
+        uses: actions/cache/restore@v4
         with:
           path: /home/runner/.ccache
           key: sycl-ccache-${{ runner.os }}-${{ github.sha }}
@@ -221,6 +234,13 @@ jobs:
           set -o pipefail; mkdir -p /tmp/logs
           python setup_sycl.py build 2>&1 | tee /tmp/logs/40_gpu4pyscf_build.log
           ccache -s || true
+
+      - name: Save ccache (even on failure, partial objects speed up retries)
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: /home/runner/.ccache
+          key: sycl-ccache-${{ runner.os }}-${{ github.sha }}
 
       - name: Smoke test - imports and CPU SYCL device visibility
         run: |
