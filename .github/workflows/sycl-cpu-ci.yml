@@ -1,0 +1,243 @@
+name: SYCL CPU CI
+
+# Sanity-verifies the SYCL port on a CPU-only GitHub-hosted runner using the
+# Intel OpenCL CPU device (no GPU present, none needed). dpctl and dpnp are
+# built from source (dpnp from the abagusetty fork's sparse branch, which
+# gpu4pyscf depends on) against the same oneAPI toolkit, so the SYCL ABI stays
+# in lockstep with what gpu4pyscf/lib expects.
+#
+# Production builds AOT-compile for Intel PVC; that cannot run here, so the
+# build passes -DGPU4PYSCF_SYCL_AOT=OFF (see gpu4pyscf/lib/CMakeLists.txt) to
+# get a generic spir64 JIT build that the OpenCL CPU device can execute.
+#
+# Triggers:
+#   - workflow_dispatch (Actions tab)
+#   - push / pull_request targeting the sycl branch
+#   - an issue/PR comment containing "@sycl-runner"
+#     NOTE: GitHub only delivers issue_comment events to the copy of this file
+#     on the repository's DEFAULT branch. For the comment trigger to work,
+#     this workflow file must also exist on the default branch; the comment
+#     run always builds the sycl branch.
+#
+# The full test suite will not finish on a 4-core runner and is not the goal;
+# the smoke steps below are allowed to partially fail (continue-on-error) so a
+# broken kernel build or import regression is still caught early.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [sycl]
+  pull_request:
+    branches: [sycl]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: sycl-cpu-ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+env:
+  # Only the OpenCL CPU device may be visible to SYCL.
+  ONEAPI_DEVICE_SELECTOR: "opencl:cpu"
+  OMP_NUM_THREADS: "2"
+  SYCL_CACHE_PERSISTENT: "1"
+  SYCL_CACHE_DIR: "/tmp/sycl_cache"
+  CCACHE_DIR: "/home/runner/.ccache"
+  CCACHE_MAXSIZE: "3G"
+  VENV: "/home/runner/sycl-venv"
+
+jobs:
+  build-and-test:
+    # For comment events, only react to "@sycl-runner".
+    if: github.event_name != 'issue_comment' || contains(github.event.comment.body, '@sycl-runner')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+
+    steps:
+      - name: Acknowledge "@sycl-runner" comment
+        if: github.event_name == 'issue_comment'
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket',
+            });
+
+      - name: Checkout gpu4pyscf
+        uses: actions/checkout@v4
+        with:
+          # Comment-triggered runs always build the sycl branch; push/PR/
+          # dispatch runs build the ref that triggered them.
+          ref: ${{ github.event_name == 'issue_comment' && 'sycl' || '' }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Intel oneAPI toolchain (compilers, MKL, TBB) and build tools
+        run: |
+          wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+            | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
+            | sudo tee /etc/apt/sources.list.d/oneAPI.list
+          sudo apt-get update
+          sudo apt-get install -y \
+            intel-oneapi-compiler-dpcpp-cpp \
+            intel-oneapi-compiler-fortran \
+            intel-oneapi-mkl-devel \
+            intel-oneapi-tbb-devel \
+            intel-oneapi-dpl-devel \
+            intel-oneapi-runtime-opencl \
+            intel-oneapi-runtime-dpcpp-cpp \
+            ocl-icd-opencl-dev clinfo \
+            lld ninja-build cmake ccache
+
+      - name: Ensure an OpenCL CPU device exists
+        run: |
+          source /opt/intel/oneapi/setvars.sh --force
+          # The dpcpp runtime package ships the Intel CPU OpenCL runtime; if
+          # for some reason no CPU device is registered, fall back to the
+          # standalone oclcpuexp release the intel/llvm project publishes
+          # (same runtime dpctl's own CI uses).
+          if ! sycl-ls | grep -qi "opencl:cpu"; then
+            OCLCPUEXP_FN="oclcpuexp-2025.21.10.0.10_160000_rel.tar.gz"
+            DRIVER_PATH="2025-WW45"
+            wget -q "https://github.com/intel/llvm/releases/download/${DRIVER_PATH}/${OCLCPUEXP_FN}" \
+              -O /tmp/oclcpuexp.tar.gz
+            sudo mkdir -p /opt/intel/oclcpuexp
+            sudo tar -xzf /tmp/oclcpuexp.tar.gz -C /opt/intel/oclcpuexp
+            sudo mkdir -p /etc/OpenCL/vendors
+            echo "/opt/intel/oclcpuexp/x64/libintelocl.so" | sudo tee /etc/OpenCL/vendors/intel_expcpu.icd
+          fi
+          icpx --version
+          sycl-ls
+          sycl-ls | grep -qi "opencl:cpu"
+
+      - name: Resolve dpctl/dpnp upstream commits (cache keys)
+        id: stack
+        run: |
+          echo "dpctl_sha=$(git ls-remote https://github.com/IntelPython/dpctl HEAD | cut -f1)" >> "$GITHUB_OUTPUT"
+          echo "dpnp_sha=$(git ls-remote https://github.com/abagusetty/dpnp refs/heads/feature-sparse-linalg-solvers | cut -f1)" >> "$GITHUB_OUTPUT"
+          echo "oneapi_ver=$(dpkg-query -W -f='${Version}' intel-oneapi-compiler-dpcpp-cpp)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache dpctl/dpnp stack (venv + source builds)
+        id: stack-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /home/runner/sycl-venv
+            /home/runner/dpctl
+            /home/runner/dpnp
+          key: sycl-stack-v1-${{ runner.os }}-py311-oneapi${{ steps.stack.outputs.oneapi_ver }}-dpctl${{ steps.stack.outputs.dpctl_sha }}-dpnp${{ steps.stack.outputs.dpnp_sha }}
+
+      - name: Create venv with Python build/runtime dependencies
+        if: steps.stack-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m venv "$VENV"
+          "$VENV/bin/pip" install --upgrade pip
+          "$VENV/bin/pip" install numpy cython setuptools wheel scikit-build cmake ninja \
+            versioneer pybind11 pytest pytest-timeout \
+            pyscf pyscf-dispersion h5py geometric
+
+      - name: Build dpctl from source (IntelPython/dpctl master)
+        if: steps.stack-cache.outputs.cache-hit != 'true'
+        run: |
+          source /opt/intel/oneapi/setvars.sh --force
+          source "$VENV/bin/activate"
+          git clone --depth 1 https://github.com/IntelPython/dpctl /home/runner/dpctl
+          cd /home/runner/dpctl
+          python scripts/build_locally.py --oneapi
+          pip install --no-build-isolation --no-deps -e .
+
+      - name: Build dpnp from source (abagusetty/dpnp feature-sparse-linalg-solvers)
+        if: steps.stack-cache.outputs.cache-hit != 'true'
+        run: |
+          source /opt/intel/oneapi/setvars.sh --force
+          source "$VENV/bin/activate"
+          git clone --depth 1 --branch feature-sparse-linalg-solvers \
+            https://github.com/abagusetty/dpnp /home/runner/dpnp
+          cd /home/runner/dpnp
+          python scripts/build_locally.py --oneapi
+          pip install --no-build-isolation --no-deps -e .
+
+      - name: Cache ccache (gpu4pyscf C++/SYCL objects)
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.ccache
+          key: sycl-ccache-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            sycl-ccache-${{ runner.os }}-
+
+      - name: Build gpu4pyscf (SYCL backend, JIT spir64, CPU-runnable)
+        env:
+          CMAKE_CONFIGURE_ARGS: >-
+            -DCMAKE_CXX_COMPILER=icpx -DCMAKE_C_COMPILER=icx
+            -DCMAKE_Fortran_COMPILER=ifx -DUSE_SYCL=ON
+            -DCMAKE_BUILD_TYPE=Release
+            -DGPU4PYSCF_SYCL_AOT=OFF
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        run: |
+          source /opt/intel/oneapi/setvars.sh --force
+          source "$VENV/bin/activate"
+          python setup_sycl.py build
+          ccache -s || true
+
+      - name: Install gpu4pyscf into the venv
+        run: |
+          source "$VENV/bin/activate"
+          pip install --no-build-isolation --no-deps -e .
+
+      - name: Smoke test - imports and CPU SYCL device visibility
+        run: |
+          source /opt/intel/oneapi/setvars.sh --force
+          source "$VENV/bin/activate"
+          python -c "import dpctl; print('dpctl', dpctl.__version__); [print(d) for d in dpctl.get_devices()]"
+          python -c "import dpnp; a = dpnp.arange(10); assert int(a.sum()) == 45; print('dpnp', dpnp.__version__, 'OK')"
+          python -c "import gpu4pyscf; print('gpu4pyscf import OK')"
+
+      - name: scf unit tests (smoke, partial completion expected)
+        continue-on-error: true
+        timeout-minutes: 90
+        run: |
+          source /opt/intel/oneapi/setvars.sh --force
+          source "$VENV/bin/activate"
+          python -m pytest gpu4pyscf/scf/tests/ -v -x --timeout=900 \
+            --durations=25 --continue-on-collection-errors
+
+      - name: df unit tests (smoke, partial completion expected)
+        continue-on-error: true
+        timeout-minutes: 60
+        run: |
+          source /opt/intel/oneapi/setvars.sh --force
+          source "$VENV/bin/activate"
+          python -m pytest gpu4pyscf/df/tests/ -v -x --timeout=900 \
+            --durations=25 --continue-on-collection-errors
+
+      - name: dft unit tests (smoke, partial completion expected)
+        continue-on-error: true
+        timeout-minutes: 60
+        run: |
+          source /opt/intel/oneapi/setvars.sh --force
+          source "$VENV/bin/activate"
+          python -m pytest gpu4pyscf/dft/tests/ -v -x --timeout=900 \
+            --durations=25 --continue-on-collection-errors
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sycl-cpu-build-logs
+          path: |
+            build/
+          retention-days: 7
