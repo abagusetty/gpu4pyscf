@@ -169,7 +169,10 @@ jobs:
           source /opt/intel/oneapi/setvars.sh --force
           source "$VENV/bin/activate"
           set -o pipefail; mkdir -p /tmp/logs
-          git clone --depth 1 https://github.com/IntelPython/dpctl /home/runner/dpctl
+          # blob-less partial clone: full history+tags (versioneer needs `git
+          # describe` to produce a version satisfying dpnp's dpctl>=0.23.0dev0
+          # pin; a shallow clone yields 0+untagged, which pip rejects).
+          git clone --filter=blob:none https://github.com/IntelPython/dpctl /home/runner/dpctl
           cd /home/runner/dpctl
           { python scripts/build_locally.py --oneapi &&
             pip install --no-build-isolation --no-deps . &&
@@ -184,7 +187,7 @@ jobs:
           source /opt/intel/oneapi/setvars.sh --force
           source "$VENV/bin/activate"
           set -o pipefail; mkdir -p /tmp/logs
-          git clone --depth 1 https://github.com/IntelPython/dpnp /home/runner/dpnp
+          git clone --filter=blob:none https://github.com/IntelPython/dpnp /home/runner/dpnp
           cd /home/runner/dpnp
           { python scripts/build_locally.py --oneapi &&
             pip install --no-build-isolation --no-deps . &&
