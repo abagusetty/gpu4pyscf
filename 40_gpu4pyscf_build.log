@@ -1,0 +1,142 @@
+/home/runner/sycl-venv/lib/python3.11/site-packages/wheel/bdist_wheel.py:4: FutureWarning: The 'wheel' package is no longer the canonical location of the 'bdist_wheel' command, and will be removed in a future release. Please update to setuptools v70.1 or later which contains an integrated version of this command.
+  warn(
+/home/runner/sycl-venv/lib/python3.11/site-packages/setuptools/_distutils/dist.py:289: UserWarning: Unknown distribution option: 'tests_require'
+  warnings.warn(msg)
+['setup_sycl.py', 'build']
+gpu4pyscf-sycl2026.1.1
+running build
+running build_py
+cmake -S/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib -Bbuild/temp.linux-x86_64/gpu4pyscf -DBUILD_LIBXC=ON -DCMAKE_CXX_COMPILER=icpx -DCMAKE_C_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DUSE_SYCL=ON -DCMAKE_BUILD_TYPE=Release -DGPU4PYSCF_SYCL_AOT=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+-- The C compiler identification is IntelLLVM 2026.1.1
+-- The CXX compiler identification is IntelLLVM 2026.1.1
+-- The Fortran compiler identification is IntelLLVM 2026.1.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /opt/intel/oneapi/compiler/2026.1/bin/icx - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /opt/intel/oneapi/compiler/2026.1/bin/icpx - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting Fortran compiler ABI info
+-- Detecting Fortran compiler ABI info - done
+-- Check for working Fortran compiler: /opt/intel/oneapi/compiler/2026.1/bin/ifx - skipped
+-- SYCL build: CMAKE_BUILD_TYPE=Release
+Build type Release
+-- Found OpenMP_C: -fiopenmp (found version "5.1")
+-- Found OpenMP_CXX: -fiopenmp (found version "5.1")
+-- Found OpenMP_Fortran: -fiopenmp (found version "5.2")
+-- Found OpenMP: TRUE (found version "5.1")
+-- MKL_VERSION: 2026.1.0
+-- MKL_ROOT: /opt/intel/oneapi/mkl/2026.1
+-- MKL_ARCH: intel64
+-- MKL_SYCL_LINK: None, set to ` dynamic` by default
+-- MKL_LINK: None, set to ` dynamic` by default
+-- MKL_SYCL_INTERFACE_FULL: None, set to ` intel_ilp64` by default
+-- MKL_INTERFACE_FULL: None, set to ` intel_ilp64` by default
+-- MKL_SYCL_THREADING: None, set to ` tbb_thread` by default
+-- MKL_THREADING: None, set to ` intel_thread` by default
+-- MKL_SYCL_MPI: None, set to ` intelmpi` by default
+-- MKL_MPI: None, set to ` intelmpi` by default
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_scalapack_ilp64.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_cdft_core.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_intel_ilp64.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_intel_thread.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_core.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_blacs_intelmpi_ilp64.so
+-- Could NOT find mkl_sycl_distributed_dft for target MKL::MKL_SYCL_DISTRIBUTED_DFT
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_blas.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_lapack.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_dft.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_sparse.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_data_fitting.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_rng.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_stats.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_vm.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_tbb_thread.so
+-- Found /opt/intel/oneapi/tbb/2023.1/lib/intel64/gcc4.8/libtbb.so.12
+-- Found /opt/intel/oneapi/compiler/2026.1/lib/libiomp5.so
+-- ExchCXX: not found -- building from source (~35 min)
+-- Configuring done (2.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf
+cmake --build build/temp.linux-x86_64/gpu4pyscf -j 4 -v
+Change Dir: '/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf'
+
+Run Build Command(s): /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile -j4
+/home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -S/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib -B/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf --check-build-system CMakeFiles/Makefile.cmake 0
+/home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -E cmake_progress_start /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/CMakeFiles /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf//CMakeFiles/progress.marks
+/usr/bin/gmake  -f CMakeFiles/Makefile2 all
+gmake[1]: Entering directory '/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf'
+/usr/bin/gmake  -f CMakeFiles/ExchCXX.dir/build.make CMakeFiles/ExchCXX.dir/depend
+/usr/bin/gmake  -f gsycl/CMakeFiles/gsycl.dir/build.make gsycl/CMakeFiles/gsycl.dir/depend
+gmake[2]: Entering directory '/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf'
+cd /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf && /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -E cmake_depends "Unix Makefiles" /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/CMakeFiles/ExchCXX.dir/DependInfo.cmake "--color=" ExchCXX
+gmake[2]: Entering directory '/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf'
+cd /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf && /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -E cmake_depends "Unix Makefiles" /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/gsycl /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/gsycl/CMakeFiles/gsycl.dir/DependInfo.cmake "--color=" gsycl
+gmake[2]: Leaving directory '/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf'
+/usr/bin/gmake  -f CMakeFiles/ExchCXX.dir/build.make CMakeFiles/ExchCXX.dir/build
+gmake[2]: Leaving directory '/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf'
+/usr/bin/gmake  -f gsycl/CMakeFiles/gsycl.dir/build.make gsycl/CMakeFiles/gsycl.dir/build
+gmake[2]: Entering directory '/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf'
+gmake[2]: Entering directory '/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf'
+[  1%] Creating directories for 'ExchCXX'
+/home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -Dcfgdir= -P /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/tmp/ExchCXX-mkdirs.cmake
+[  2%] Building CXX object gsycl/CMakeFiles/gsycl.dir/sycl_api_python.cpp.o
+cd /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/gsycl && ccache /opt/intel/oneapi/compiler/2026.1/bin/icpx -DUSE_SYCL=1 -Dgsycl_EXPORTS -I/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl -O3 -DNDEBUG -std=gnu++17 -fPIC -fsycl -Wno-ignored-reference-qualifiers -Wno-register -fsycl-device-code-split=per_kernel -fp-model=precise -fno-system-debug -fsycl-default-sub-group-size=32 -MD -MT gsycl/CMakeFiles/gsycl.dir/sycl_api_python.cpp.o -MF CMakeFiles/gsycl.dir/sycl_api_python.cpp.o.d -o CMakeFiles/gsycl.dir/sycl_api_python.cpp.o -c /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl/sycl_api_python.cpp
+/home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -E touch /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src/ExchCXX-stamp/ExchCXX-mkdir
+[  3%] Performing download step (git clone) for 'ExchCXX'
+cd /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src && /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/tmp/ExchCXX-gitclone.cmake
+Cloning into 'ExchCXX'...
+HEAD is now at d7ed4af Clean up SYCL compiler and linker flags, arg warnings
+cd /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src && /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -E touch /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src/ExchCXX-stamp/ExchCXX-download
+[  4%] Performing disconnected update step for 'ExchCXX'
+cd /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src/ExchCXX && /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -Dcan_fetch=NO -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/tmp/ExchCXX-gitupdate.cmake
+-- Already at requested ref: d7ed4af53ce0499da62d38e54e100713ee565e8f
+cd /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src/ExchCXX && /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -E touch /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src/ExchCXX-stamp/ExchCXX-update_disconnected
+[  5%] No patch_disconnected step for 'ExchCXX'
+/home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -E echo_append
+/home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -E touch /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src/ExchCXX-stamp/ExchCXX-patch_disconnected
+[  6%] Performing configure step for 'ExchCXX'
+cd /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src/ExchCXX-build && /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DEXCHCXX_ENABLE_SYCL=ON -DEXCHCXX_SYCL_TARGET= -DEXCHCXX_ENABLE_TESTS=OFF -DEXCHCXX_ENABLE_LIBXC=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX:PATH=/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/deps -DCMAKE_INSTALL_LIBDIR:PATH=lib "-DCMAKE_C_CREATE_SHARED_LIBRARY=<CMAKE_C_COMPILER> <CMAKE_SHARED_LIBRARY_C_FLAGS> <LANGUAGE_COMPILE_FLAGS> <LINK_FLAGS> <CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS> -o <TARGET> <OBJECTS> <LINK_LIBRARIES>" "-DCMAKE_CXX_CREATE_SHARED_LIBRARY=<CMAKE_CXX_COMPILER> <CMAKE_SHARED_LIBRARY_CXX_FLAGS> <LANGUAGE_COMPILE_FLAGS> <LINK_FLAGS> <CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS> -o <TARGET> <OBJECTS> <LINK_LIBRARIES>" "-GUnix Makefiles" -S /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src/ExchCXX -B /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src/ExchCXX-build
+Re-run cmake no build system arguments
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- xc_kernel.cxxxc_functional.cxxboilerplate.cxxbuiltin.cxxbuiltin_interface.cxxbuiltin_kernel.cxx
+-- Performing Test CXX_HAS_FSYCL
+-- Performing Test CXX_HAS_FSYCL - Failed
+CMake Error at /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/share/cmake-4.4/Modules/FindPackageHandleStandardArgs.cmake:290 (message):
+  Could NOT find SYCL (missing: CXX_HAS_FSYCL)
+Call Stack (most recent call first):
+  /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/share/cmake-4.4/Modules/FindPackageHandleStandardArgs.cmake:654 (_FPHSA_FAILURE_MESSAGE)
+  cmake/FindSYCL.cmake:5 (find_package_handle_standard_args)
+  src/sycl/exchcxx_sycl.cmake:13 (find_package)
+  src/CMakeLists.txt:42 (include)
+
+
+-- Configuring incomplete, errors occurred!
+gmake[2]: *** [CMakeFiles/ExchCXX.dir/build.make:92: deps/src/ExchCXX-stamp/ExchCXX-configure] Error 1
+gmake[2]: Leaving directory '/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf'
+gmake[1]: *** [CMakeFiles/Makefile2:394: CMakeFiles/ExchCXX.dir/all] Error 2
+gmake[1]: *** Waiting for unfinished jobs....
+[  6%] Linking CXX shared library /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/libgsycl.so
+cd /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/gsycl && /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake -E cmake_link_script CMakeFiles/gsycl.dir/link.txt --verbose=1
+/opt/intel/oneapi/compiler/2026.1/bin/icpx -fPIC -O3 -DNDEBUG -shared -fsycl -flink-huge-device-code -fsycl-max-parallel-link-jobs=4 -Wl,--dependency-file=CMakeFiles/gsycl.dir/link.d -Wl,-soname,libgsycl.so -o /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/libgsycl.so CMakeFiles/gsycl.dir/sycl_api_python.cpp.o
+gmake[2]: Leaving directory '/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf'
+[  6%] Built target gsycl
+gmake[1]: Leaving directory '/home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf'
+gmake: *** [Makefile:91: all] Error 2
+
+error: command '/home/runner/sycl-venv/bin/cmake' failed with exit code 2
