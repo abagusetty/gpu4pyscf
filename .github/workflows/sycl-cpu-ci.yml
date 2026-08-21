@@ -172,8 +172,11 @@ jobs:
           git clone --depth 1 https://github.com/IntelPython/dpctl /home/runner/dpctl
           cd /home/runner/dpctl
           { python scripts/build_locally.py --oneapi &&
-            pip install --no-build-isolation --no-deps -e . &&
-            python -c "import dpctl; print('dpctl OK', dpctl.__version__)" ; } 2>&1 | tee /tmp/logs/20_dpctl_build.log
+            pip install --no-build-isolation --no-deps . &&
+            cd /tmp && python -c "import dpctl; print('dpctl OK', dpctl.__version__)" ; } 2>&1 | tee /tmp/logs/20_dpctl_build.log
+          # NON-editable install on purpose: dpnp's Cython resolves dpctl.pxd
+          # by scanning sys.path for a real site-packages/dpctl/ directory; a
+          # PEP-660 editable install hides it behind an import hook.
 
       - name: Build dpnp from source (IntelPython/dpnp master)
         if: steps.stack-cache.outputs.cache-hit != 'true'
@@ -184,8 +187,8 @@ jobs:
           git clone --depth 1 https://github.com/IntelPython/dpnp /home/runner/dpnp
           cd /home/runner/dpnp
           { python scripts/build_locally.py --oneapi &&
-            pip install --no-build-isolation --no-deps -e . &&
-            python -c "import dpnp; print('dpnp OK', dpnp.__version__)" ; } 2>&1 | tee /tmp/logs/30_dpnp_build.log
+            pip install --no-build-isolation --no-deps . &&
+            cd /tmp && python -c "import dpnp; print('dpnp OK', dpnp.__version__)" ; } 2>&1 | tee /tmp/logs/30_dpnp_build.log
 
       - name: Cache ccache (gpu4pyscf C++/SYCL objects)
         uses: actions/cache@v4
