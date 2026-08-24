@@ -141,6 +141,8 @@ jobs:
           icpx --version
           sycl-ls
           sycl-ls | grep -qi "opencl:cpu"
+          echo "--- sycl-ls --verbose (device info incl. sub_group_sizes) ---"
+          sycl-ls --verbose
 
       - name: Create venv with Python build/runtime dependencies
         run: |
