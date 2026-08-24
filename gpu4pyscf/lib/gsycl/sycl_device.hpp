@@ -11,7 +11,14 @@
 
 #include <sycl/sycl.hpp>
 
-#define warpSize (item.get_sub_group().get_max_local_range()[0])
+// Hardcoded to match -fsycl-default-sub-group-size=32 (see
+// gpu4pyscf/lib/CMakeLists.txt). Kernels are compiled requesting a 32-wide
+// sub-group; querying item.get_sub_group().get_max_local_range()[0] at
+// runtime is redundant with that build-time contract and costs an extra
+// device-side query per use. Confirmed 32 is a supported sub-group size on
+// both the PVC AOT target and the OpenCL CPU JIT target used by
+// sycl-cpu-ci (reports sub_group_sizes: 4 8 16 32 64).
+#define warpSize (32)
 
 using cudaError_t = int;
 constexpr int cudaSuccess = 0;
