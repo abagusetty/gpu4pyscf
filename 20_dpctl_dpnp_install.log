@@ -1,0 +1,12 @@
+Looking in indexes: https://pypi.anaconda.org/dppy/label/dev/simple/
+Collecting dpctl
+  Downloading dpctl-0.23.0.dev0%2B318.g06bdaf17d7-318-cp311-cp311-manylinux_2_28_x86_64.whl (1.5 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.5/1.5 MB 3.4 MB/s  0:00:00
+Collecting dpnp
+  Downloading dpnp-0.21.0.dev6%2B1.g50dc2ccc311-1-cp311-cp311-manylinux_2_28_x86_64.whl (29.2 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 29.2/29.2 MB 35.5 MB/s  0:00:00
+Installing collected packages: dpnp, dpctl
+
+Successfully installed dpctl-0.23.0.dev0+318.g06bdaf17d7 dpnp-0.21.0.dev6+1.g50dc2ccc311
+dpctl OK 0.23.0dev0+318.g06bdaf17d7
+dpnp OK 0.21.0dev6+1.g50dc2ccc311
