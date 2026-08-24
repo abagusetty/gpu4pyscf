@@ -1,10 +1,15 @@
 name: SYCL CPU CI
 
 # Sanity-verifies the SYCL port on a CPU-only GitHub-hosted runner using the
-# Intel OpenCL CPU device (no GPU present, none needed). dpctl and dpnp are
-# built from source at their latest upstream (IntelPython) commits against the
-# same oneAPI toolkit, so the SYCL ABI stays in lockstep with what
-# gpu4pyscf/lib expects.
+# Intel OpenCL CPU device (no GPU present, none needed). dpctl and dpnp track
+# IntelPython's latest master via the prebuilt --pre wheels IntelPython's own
+# CI publishes to the `dppy/label/dev` Anaconda channel on every push to
+# their master branch (usually within the hour). This avoids a from-source
+# build of both packages, which took ~55 minutes and made this workflow
+# unusable (see run 32596936738). If the dev-channel wheels are ever
+# missing/stale for the pinned Python ABI, the old from-source recipe (clone
+# IntelPython/{dpctl,dpnp}, `python scripts/build_locally.py --oneapi`) is
+# still valid and can be restored from git history.
 #
 # NOTE: gpu4pyscf's local dev setup uses a sparse-solvers dpnp fork
 # (abagusetty/dpnp, feature-sparse-linalg-solvers). This CI deliberately
@@ -137,74 +142,33 @@ jobs:
           sycl-ls
           sycl-ls | grep -qi "opencl:cpu"
 
-      - name: Resolve dpctl/dpnp upstream commits (cache keys)
-        id: stack
-        run: |
-          echo "dpctl_sha=$(git ls-remote https://github.com/IntelPython/dpctl HEAD | cut -f1)" >> "$GITHUB_OUTPUT"
-          echo "dpnp_sha=$(git ls-remote https://github.com/IntelPython/dpnp HEAD | cut -f1)" >> "$GITHUB_OUTPUT"
-          echo "oneapi_ver=$(dpkg-query -W -f='${Version}' intel-oneapi-compiler-dpcpp-cpp)" >> "$GITHUB_OUTPUT"
-
-      - name: Restore dpctl/dpnp stack cache (venv + source builds)
-        id: stack-cache
-        # Explicit restore/save split: plain actions/cache only saves when the
-        # whole job succeeds, so iterating on later steps kept losing the
-        # ~45 min dpnp build. The save step below runs right after the builds.
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            /home/runner/sycl-venv
-            /home/runner/dpctl
-            /home/runner/dpnp
-          key: sycl-stack-v1-${{ runner.os }}-py311-oneapi${{ steps.stack.outputs.oneapi_ver }}-dpctl${{ steps.stack.outputs.dpctl_sha }}-dpnp${{ steps.stack.outputs.dpnp_sha }}
-
       - name: Create venv with Python build/runtime dependencies
-        if: steps.stack-cache.outputs.cache-hit != 'true'
         run: |
           python -m venv "$VENV"
           "$VENV/bin/pip" install --upgrade pip
-          "$VENV/bin/pip" install numpy cython setuptools wheel scikit-build cmake ninja \
-            versioneer pybind11 pytest pytest-timeout \
-            pyscf pyscf-dispersion h5py geometric
+          "$VENV/bin/pip" install numpy cython setuptools wheel cmake ninja \
+            pytest pytest-timeout pyscf pyscf-dispersion h5py geometric
 
-      - name: Build dpctl from source (IntelPython/dpctl master)
-        if: steps.stack-cache.outputs.cache-hit != 'true'
+      - name: Install dpctl/dpnp (prebuilt --pre wheels, IntelPython dev channel)
+        # IntelPython publishes dpctl/dpnp wheels to the dppy/label/dev
+        # Anaconda channel on every push to their master branch (their own
+        # conda-package.yml CI), so this tracks "latest upstream" the same
+        # way the old from-source build did, but as a ~30MB wheel download
+        # instead of a ~55 minute CMake+SYCL compile of both packages.
+        #
+        # --no-deps: these wheels' runtime deps (dpcpp-cpp-rt, onemkl-sycl-*,
+        # intel-sycl-rt) live only on Intel's own PyPI index, not the public
+        # one, and duplicate what the apt-installed oneAPI toolkit above
+        # already provides (icpx runtime, MKL, TBB). Using the apt-installed
+        # libraries avoids a second, possibly version-mismatched, copy.
         run: |
           source /opt/intel/oneapi/setvars.sh --force
-          source "$VENV/bin/activate"
           set -o pipefail; mkdir -p /tmp/logs
-          # blob-less partial clone: full history+tags (versioneer needs `git
-          # describe` to produce a version satisfying dpnp's dpctl>=0.23.0dev0
-          # pin; a shallow clone yields 0+untagged, which pip rejects).
-          git clone --filter=blob:none https://github.com/IntelPython/dpctl /home/runner/dpctl
-          cd /home/runner/dpctl
-          { python scripts/build_locally.py --oneapi &&
-            pip install --no-build-isolation --no-deps . &&
-            cd /tmp && python -c "import dpctl; print('dpctl OK', dpctl.__version__)" ; } 2>&1 | tee /tmp/logs/20_dpctl_build.log
-          # NON-editable install on purpose: dpnp's Cython resolves dpctl.pxd
-          # by scanning sys.path for a real site-packages/dpctl/ directory; a
-          # PEP-660 editable install hides it behind an import hook.
-
-      - name: Build dpnp from source (IntelPython/dpnp master)
-        if: steps.stack-cache.outputs.cache-hit != 'true'
-        run: |
-          source /opt/intel/oneapi/setvars.sh --force
-          source "$VENV/bin/activate"
-          set -o pipefail; mkdir -p /tmp/logs
-          git clone --filter=blob:none https://github.com/IntelPython/dpnp /home/runner/dpnp
-          cd /home/runner/dpnp
-          { python scripts/build_locally.py --oneapi &&
-            pip install --no-build-isolation --no-deps . &&
-            cd /tmp && python -c "import dpnp; print('dpnp OK', dpnp.__version__)" ; } 2>&1 | tee /tmp/logs/30_dpnp_build.log
-
-      - name: Save dpctl/dpnp stack cache
-        if: steps.stack-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            /home/runner/sycl-venv
-            /home/runner/dpctl
-            /home/runner/dpnp
-          key: sycl-stack-v1-${{ runner.os }}-py311-oneapi${{ steps.stack.outputs.oneapi_ver }}-dpctl${{ steps.stack.outputs.dpctl_sha }}-dpnp${{ steps.stack.outputs.dpnp_sha }}
+          { "$VENV/bin/pip" install --pre --upgrade --no-deps dpctl dpnp \
+              --index-url https://pypi.anaconda.org/dppy/label/dev/simple/ &&
+            "$VENV/bin/python" -c "import dpctl; print('dpctl OK', dpctl.__version__)" &&
+            "$VENV/bin/python" -c "import dpnp; print('dpnp OK', dpnp.__version__)" ; } \
+            2>&1 | tee /tmp/logs/20_dpctl_dpnp_install.log
 
       - name: Restore ccache (gpu4pyscf C++/SYCL objects)
         uses: actions/cache/restore@v4

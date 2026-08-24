@@ -287,7 +287,16 @@ def _get_sycl_queue_ptr(q: dpctl.SyclQueue) -> int:
 # Master-queue registry
 # =====================================================================
 def _gpu_devices():
-    """Enumerate GPU devices once (prefer level_zero). Cached in _state."""
+    """Enumerate accelerator devices once (prefer level_zero GPU). Cached in
+    _state.
+
+    Falls back to any GPU backend, then to CPU-type SYCL devices (e.g. the
+    OpenCL CPU device used by CI on GPU-less runners), then to whatever
+    dpctl enumerates at all. Each tier is tried whenever the previous one
+    comes back empty -- not just on exception, since dpctl.get_devices()
+    returns [] rather than raising when a device_type/backend combination
+    simply has no matches.
+    """
     if _state["gpu_devices"] is not None:
         return _state["gpu_devices"]
     try:
@@ -298,7 +307,14 @@ def _gpu_devices():
         try:
             devs = dpctl.get_devices(device_type="gpu")
         except Exception:
-            devs = dpctl.get_devices()
+            devs = []
+    if not devs:
+        try:
+            devs = dpctl.get_devices(device_type="cpu")
+        except Exception:
+            devs = []
+    if not devs:
+        devs = dpctl.get_devices()
     _state["gpu_devices"] = devs
     return devs
 
