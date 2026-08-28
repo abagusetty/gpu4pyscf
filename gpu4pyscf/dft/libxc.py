@@ -38,15 +38,33 @@ is_nlc           = libxc_cpu.is_nlc
 is_hybrid_xc     = libxc_cpu.is_hybrid_xc
 test_deriv_order = libxc_cpu.test_deriv_order
 
+# XC backend selection. 'libxc' (default) uses the CUDA libxc build in
+# lib/deps/lib/libxc.so; 'exchcxx' uses lib/deps/lib/libxc_exchcxx.so, which
+# exposes the same libxc C ABI plus the GDFT_xc_* entry points but evaluates
+# functionals with ExchCXX. Requires cmake -DBUILD_EXCHCXX=ON.
+XC_BACKEND = os.environ.get('GDFT_XC_BACKEND', 'libxc').lower()
+if XC_BACKEND not in ('libxc', 'exchcxx'):
+    raise ValueError(
+        f"Unknown GDFT_XC_BACKEND={XC_BACKEND!r}; expected 'libxc' or 'exchcxx'")
+
+_libxc_soname = 'libxc' if XC_BACKEND == 'libxc' else 'libxc_exchcxx'
+
 for path in path_list:
     libxc_path = os.path.abspath(os.path.join(path, 'gpu4pyscf', 'lib', 'deps', 'lib'))
     try:
-        _libxc = np.ctypeslib.load_library('libxc', libxc_path)
+        _libxc = np.ctypeslib.load_library(_libxc_soname, libxc_path)
         break
     except Exception:
         _libxc = None
 
-libgdft = load_library('libgdft')
+if XC_BACKEND == 'exchcxx' and _libxc is None:
+    raise ImportError(
+        'GDFT_XC_BACKEND=exchcxx but libxc_exchcxx.so was not found. '
+        'Rebuild with cmake -DBUILD_EXCHCXX=ON, or unset GDFT_XC_BACKEND.')
+
+# The ExchCXX build carries its own GDFT_xc_lda/gga/mgga; the libxc build takes
+# them from libgdft.so.
+libgdft = _libxc if XC_BACKEND == 'exchcxx' else load_library('libgdft')
 libgdft.GDFT_xc_lda.argtypes = (
     ctypes.c_void_p,
     ctypes.c_void_p,
@@ -86,7 +104,11 @@ if _libxc is None:
     )
 
 _libxc.xc_version_string.restype = ctypes.c_char_p
-__version__ = _libxc.xc_version_string().decode() + ' (CUDA)'
+if XC_BACKEND == 'exchcxx':
+    # the ExchCXX shim already names its backend and target in this string
+    __version__ = _libxc.xc_version_string().decode()
+else:
+    __version__ = _libxc.xc_version_string().decode() + ' (CUDA)'
 
 LDA_OUTPUT_LABELS = [
                 "zk",       # 1, 1
@@ -186,6 +208,13 @@ class XCfun:
             self.xc_func = _libxc.xc_func_alloc()
             ret = _libxc.xc_func_init(self.xc_func, self.func_id, self._spin)
             if ret != 0:
+                if XC_BACKEND == 'exchcxx':
+                    # ExchCXX has no builtin kernel for this functional. Drop to
+                    # on_gpu=False so eval_xc_eff falls back to PySCF's CPU libxc.
+                    _libxc.xc_func_free(self.xc_func)
+                    self.xc_func = None
+                    self.on_gpu = False
+                    return
                 raise RuntimeError('failed to initialize xc fun')
 
             self.xc_func_sizes = {}

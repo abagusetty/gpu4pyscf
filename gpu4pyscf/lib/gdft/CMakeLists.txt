@@ -25,3 +25,40 @@ add_library(gdft SHARED
 
 set_target_properties(gdft PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+
+# ---------------------------------------------------------------------------
+# Optional ExchCXX backend: libxc_exchcxx.so
+#
+# A drop-in replacement for deps/lib/libxc.so that implements the same libxc
+# C ABI (xc_func_alloc/init/end/free, xc_version_string, ...) plus the three
+# GDFT_xc_lda/gga/mgga device entry points, backed by ExchCXX instead of
+# libxc's own CUDA kernels. Selected at runtime with GDFT_XC_BACKEND=exchcxx;
+# the default libxc build above is always present and untouched.
+#
+# Built as plain C++ (not CUDA): exchcxx.cpp only calls host-side CUDA runtime
+# functions and ExchCXX's device entry points, which live in libexchcxx.so.
+# ---------------------------------------------------------------------------
+if(BUILD_EXCHCXX)
+  find_package(CUDAToolkit REQUIRED)
+
+  add_library(xc_exchcxx SHARED exchcxx.cpp)
+  add_dependencies(xc_exchcxx ExchCXX)
+
+  target_include_directories(xc_exchcxx PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}   # exchcxx.h
+    ${PROJECT_SOURCE_DIR}
+  )
+  target_link_libraries(xc_exchcxx PRIVATE ExchCXX::ExchCXX CUDA::cudart)
+
+  set_target_properties(xc_exchcxx PROPERTIES
+    OUTPUT_NAME              xc_exchcxx
+    POSITION_INDEPENDENT_CODE ON
+    # Python looks for it next to libxc.so, in gpu4pyscf/lib/deps/lib
+    LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/deps/lib"
+    # libexchcxx.so (and, if enabled, its own CPU libxc) live under
+    # deps/exchcxx/lib. deps/lib is deliberately left out of the RPATH: it holds
+    # the CUDA libxc.so.7, which must not shadow ExchCXX's own libxc.
+    BUILD_RPATH              "$ORIGIN/../exchcxx/lib:$ORIGIN/../exchcxx/lib64"
+    INSTALL_RPATH            "$ORIGIN/../exchcxx/lib:$ORIGIN/../exchcxx/lib64"
+  )
+endif()

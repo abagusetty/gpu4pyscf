@@ -121,6 +121,76 @@ if(BUILD_CUTLASS)
   set(cutlass_SOURCE_DIR ${SOURCE_DIR})
 endif()
 
+# ---------------------------------------------------------------------------
+# Optional ExchCXX XC backend (alternative to the CUDA libxc above).
+#
+# Both backends are built side by side; gpu4pyscf.dft.libxc picks between them
+# at import time from the GDFT_XC_BACKEND environment variable (libxc default).
+#
+# ExchCXX is installed into deps/exchcxx rather than deps, so that its own
+# bundled CPU libxc (EXCHCXX_ENABLE_LIBXC, used for functionals with no builtin
+# ExchCXX kernel) cannot overwrite the CUDA deps/lib/libxc.so that the default
+# backend loads.
+# ---------------------------------------------------------------------------
+option(BUILD_EXCHCXX "Also build the ExchCXX XC backend (runtime-selectable)" OFF)
+option(EXCHCXX_WITH_LIBXC "Build ExchCXX with its CPU libxc backend for uncovered functionals" ON)
+
+if(BUILD_EXCHCXX)
+  include(ExternalProject)
+
+  set(_exchcxx_prefix "${PROJECT_SOURCE_DIR}/deps/exchcxx")
+  set(_exchcxx_lib    "${_exchcxx_prefix}/lib/libexchcxx.so")
+  set(_exchcxx_inc    "${_exchcxx_prefix}/include")
+
+  # Both directories must exist at configure time for the IMPORTED target.
+  file(MAKE_DIRECTORY "${_exchcxx_inc}")
+  file(MAKE_DIRECTORY "${_exchcxx_prefix}/lib")
+
+  add_library(ExchCXX::ExchCXX SHARED IMPORTED GLOBAL)
+  set_target_properties(ExchCXX::ExchCXX PROPERTIES
+    IMPORTED_LOCATION             "${_exchcxx_lib}"
+    INTERFACE_INCLUDE_DIRECTORIES "${_exchcxx_inc}"
+    INTERFACE_COMPILE_DEFINITIONS "EXCHCXX_HAS_CONFIG_H=1"
+  )
+
+  if(NOT EXISTS "${_exchcxx_lib}")
+    message(STATUS "ExchCXX: not found -- building from source")
+    ExternalProject_Add(ExchCXX
+      GIT_REPOSITORY    https://github.com/abagusetty/ExchCXX.git
+      GIT_TAG           d7ed4af53ce0499da62d38e54e100713ee565e8f
+      UPDATE_DISCONNECTED ON
+      PREFIX            ${PROJECT_BINARY_DIR}/deps_exchcxx
+      INSTALL_DIR       ${_exchcxx_prefix}
+      CMAKE_ARGS
+      -DCMAKE_BUILD_TYPE=Release
+      -DBUILD_SHARED_LIBS=ON
+      -DEXCHCXX_ENABLE_CUDA=ON
+      -DEXCHCXX_ENABLE_TESTS=OFF
+      -DEXCHCXX_ENABLE_LIBXC=${EXCHCXX_WITH_LIBXC}
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+      -DCMAKE_INSTALL_LIBDIR:PATH=lib
+      # With EXCHCXX_ENABLE_LIBXC=ON, ExchCXX FetchContents its own CPU libxc
+      # and installs it beside libexchcxx.so. $ORIGIN lets libexchcxx.so resolve
+      # it without LD_LIBRARY_PATH (RUNPATH does not inherit from the loader).
+      # Note: unlike the libxc ExternalProject above, the C/CXX link templates
+      # are deliberately NOT overridden here. Those templates drop
+      # <SONAME_FLAG><TARGET_SONAME>, and ExchCXX's FetchContent'd libxc would
+      # then be recorded in libexchcxx.so's DT_NEEDED by its build-tree path,
+      # which does not exist after install.
+      -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON
+      -DCMAKE_INSTALL_RPATH:STRING=$ORIGIN
+      CMAKE_CACHE_ARGS -DCMAKE_CUDA_ARCHITECTURES:STRING=${CMAKE_CUDA_ARCHITECTURES}
+      BUILD_BYPRODUCTS "${_exchcxx_lib}"
+    )
+  else()
+    message(STATUS "ExchCXX: found ${_exchcxx_lib} -- skipping rebuild")
+    add_custom_target(ExchCXX)    # no-op target, satisfies add_dependencies()
+  endif()
+
+  add_dependencies(ExchCXX::ExchCXX ExchCXX)
+endif()
+
 add_subdirectory(gint)
 add_subdirectory(gvhf)
 add_subdirectory(gdft)
