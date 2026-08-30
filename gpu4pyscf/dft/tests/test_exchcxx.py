@@ -31,6 +31,11 @@ works in two modes:
 Everything is skipped when lib/deps/lib/libxc_exchcxx.so is absent, i.e. when
 the tree was not built with cmake -DBUILD_EXCHCXX=ON.
 
+ExchCXX implements a subset of libxc natively (~91 of ~677 functionals). The
+rest fall back to PySCF's CPU libxc, the same way the libxc-CUDA backend does;
+test_uncovered_functional_falls_back_to_cpu covers that route, and every other
+test asserts on_gpu is True so a silent fallback cannot be mistaken for a pass.
+
 Reference is CPU libxc rather than the CUDA libxc build, because CPU libxc is
 what both GPU backends are expected to reproduce and it is available whichever
 backend this process loaded.
@@ -262,6 +267,61 @@ class ExchCXXAccuracy(unittest.TestCase):
 
     def test_u_mGGA_c_m06(self):
         self._check_xc('MGGA_C_M06', spin=1, deriv=1)
+
+    # --- CPU fallback for functionals ExchCXX has no kernel for -------------
+
+    def test_uncovered_functional_falls_back_to_cpu(self):
+        """A functional with no ExchCXX kernel must reach PySCF's CPU libxc.
+
+        ExchCXX implements ~91 of libxc's ~677 functionals natively. For the
+        rest, xc_func_init returns 3, XCfun clears on_gpu, and eval_xc_eff
+        routes the whole evaluation to pyscf.dft.numint -- the same path the
+        libxc-CUDA backend uses. This asserts that route is live, because the
+        other tests all assert on_gpu is True and so would never exercise it.
+
+        GGA_X_G96 (Gill 1996) is in libxc and in the shim's id table, but has no
+        entry in libxc_kernel_map, so it takes the fallback. If ExchCXX ever
+        gains a G96 kernel this test will fail loudly rather than silently stop
+        testing anything -- swap in another unmapped functional at that point.
+        """
+        import cupy
+        from gpu4pyscf.dft.numint import NumInt as numint_gpu
+        from gpu4pyscf.dft import libxc as gpu_libxc
+
+        xc = 'GGA_X_G96'
+        self.assertEqual(gpu_libxc.XC_BACKEND, 'exchcxx')
+
+        # The functional must still be resolvable by name, or the test is
+        # measuring a typo rather than the fallback.
+        self.assertIn(xc, gpu_libxc.libxc_cpu.XC_CODES,
+                      f'{xc} is not a libxc functional name')
+
+        ni_gpu = numint_gpu()
+        xcfun = gpu_libxc.XCfun(xc, 'unpolarized')
+        self.assertFalse(
+            xcfun.on_gpu,
+            f'{xc} reports on_gpu=True -- ExchCXX now has a kernel for it, so '
+            f'this test no longer exercises the CPU fallback. Pick another '
+            f'functional absent from libxc_kernel_map in exchcxx.cpp.')
+
+        # And the fallback must produce correct numbers, not just not crash.
+        ni_cpu = numint_cpu()
+        grids = Grids(mol).build()
+        ao = ni_cpu.eval_ao(mol, grids.coords, 1)
+        rho = ni_cpu.eval_rho(mol, ao, dm0, xctype='GGA')
+
+        ref = ni_cpu.eval_xc_eff(xc, rho, deriv=1, xctype='GGA')
+        got = ni_gpu.eval_xc_eff(xc, cupy.array(rho), deriv=1, xctype='GGA')
+
+        dense = _total_rho(rho, 0) > RHO_FLOOR
+        for i, label in enumerate(self.LABELS[:2]):
+            err = _worst(got[i].get(), ref[i], dense)
+            print(f'[exchcxx] {xc} CPU-fallback {label}={err:.3e}', flush=True)
+            # Both sides are the same CPU libxc, so this is a round-trip check
+            # on the fallback plumbing: it must be exact.
+            self.assertEqual(err, 0.0,
+                             f'{xc} {label} differs although both sides used '
+                             f'the same CPU libxc')
 
     # --- the cutoff difference itself ---------------------------------------
 

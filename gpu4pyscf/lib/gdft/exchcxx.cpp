@@ -1395,30 +1395,19 @@ extern "C" int xc_func_init(xc_func_type *p, int functional, int nspin) {
     } else { // KernelByName: single kernel by LibXC name
       auto maybe_k = kernel_from_libxc_name(name_upper);
       if (!maybe_k) {
-#ifdef EXCHCXX_ENABLE_LIBXC
-        // No builtin ExchCXX kernel for this label. ExchCXX's libxc backend
-        // covers it instead: its device entry points stage through the host and
-        // call CPU libxc, so the result is correct but slower than a builtin.
-        try {
-          impl->k = std::make_unique<ExchCXX::XCKernel>(
-                      ExchCXX::libxc_name_string(name_upper), impl->spin);
-          needs_lapl = libxc_name_needs_lapl(name_upper);
-          const int fam = impl->k->is_mgga() ? XC_FAMILY_MGGA
-                        : impl->k->is_gga()  ? XC_FAMILY_GGA
-                        :                      XC_FAMILY_LDA;
+        // No builtin ExchCXX kernel for this functional. Return 3 so
+        // XCfun.__init__ clears on_gpu and eval_xc_eff routes the whole
+        // evaluation to the CPU libxc that PySCF already has loaded -- the same
+        // path the libxc-CUDA backend uses for functionals it cannot handle.
+        //
+        // ExchCXX's own libxc backend is deliberately not used here: it stages
+        // every batch device->host->device around a CPU libxc call, which is
+        // slower than PySCF's single round trip, and it would pull a second
+        // CPU libxc into the process alongside PySCF's.
+        if(exchcxx_verbose())
           std::fprintf(stderr,
-            "[gdft] ExchCXX: '%s' has no builtin kernel -- using the libxc "
-            "backend (host fallback)\n", name_upper.c_str());
-          return finalize(fam, needs_lapl);
-        } catch (const std::exception& e) {
-          std::fprintf(stderr,
-            "ExchCXX: libxc backend also rejected '%s': %s\n",
-            name_upper.c_str(), e.what());
-        }
-#endif
-        std::fprintf(stderr,
-          "ExchCXX: LibXC name '%s' has no builtin single-kernel implementation\n",
-          name_upper.c_str());
+            "[gdft] ExchCXX: no builtin kernel for '%s' -- falling back to "
+            "PySCF's CPU libxc\n", name_upper.c_str());
         return 3; // let caller fallback
       }
       const auto kenum = *maybe_k;

@@ -35,6 +35,9 @@ set_target_properties(gdft PROPERTIES
 # libxc's own CUDA kernels. Selected at runtime with GDFT_XC_BACKEND=exchcxx;
 # the default libxc build above is always present and untouched.
 #
+# Functionals ExchCXX has no builtin kernel for fall back to PySCF's CPU libxc
+# via xc_func_init returning 3 -- see the note in ../CMakeLists.txt.
+#
 # Built as plain C++ (not CUDA): exchcxx.cpp only calls host-side CUDA runtime
 # functions and ExchCXX's device entry points, which live in libexchcxx.so.
 # ---------------------------------------------------------------------------
@@ -55,9 +58,7 @@ if(BUILD_EXCHCXX)
     POSITION_INDEPENDENT_CODE ON
     # Python looks for it next to libxc.so, in gpu4pyscf/lib/deps/lib
     LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/deps/lib"
-    # libexchcxx.so (and, if enabled, its own CPU libxc) live under
-    # deps/exchcxx/lib. deps/lib is deliberately left out of the RPATH: it holds
-    # the CUDA libxc.so.7, which must not shadow ExchCXX's own libxc.
+    # libexchcxx.so lives under deps/exchcxx/lib
     BUILD_RPATH              "$ORIGIN/../exchcxx/lib:$ORIGIN/../exchcxx/lib64"
     INSTALL_RPATH            "$ORIGIN/../exchcxx/lib:$ORIGIN/../exchcxx/lib64"
   )

@@ -122,18 +122,23 @@ if(BUILD_CUTLASS)
 endif()
 
 # ---------------------------------------------------------------------------
-# Optional ExchCXX XC backend (alternative to the CUDA libxc above).
+# Optional ExchCXX XC backend (alternative to the CUDA libxc below).
 #
 # Both backends are built side by side; gpu4pyscf.dft.libxc picks between them
 # at import time from the GDFT_XC_BACKEND environment variable (libxc default).
 #
-# ExchCXX is installed into deps/exchcxx rather than deps, so that its own
-# bundled CPU libxc (EXCHCXX_ENABLE_LIBXC, used for functionals with no builtin
-# ExchCXX kernel) cannot overwrite the CUDA deps/lib/libxc.so that the default
-# backend loads.
+# ExchCXX is built with EXCHCXX_ENABLE_LIBXC=OFF: builtin GPU kernels only. A
+# functional ExchCXX has no kernel for falls back to the CPU libxc that PySCF
+# already provides, exactly as the libxc-CUDA backend does -- xc_func_init
+# returns 3, XCfun clears on_gpu, and eval_xc_eff routes the evaluation to
+# pyscf.dft.numint. Building ExchCXX's own libxc backend instead would stage
+# each batch device->host->device around a CPU libxc call and pull a second CPU
+# libxc into the process alongside PySCF's.
+#
+# ExchCXX still installs into deps/exchcxx rather than deps so that libexchcxx.so
+# stays clear of the CUDA deps/lib/libxc.so the default backend loads.
 # ---------------------------------------------------------------------------
 option(BUILD_EXCHCXX "Also build the ExchCXX XC backend (runtime-selectable)" OFF)
-option(EXCHCXX_WITH_LIBXC "Build ExchCXX with its CPU libxc backend for uncovered functionals" ON)
 
 if(BUILD_EXCHCXX)
   include(ExternalProject)
@@ -166,18 +171,12 @@ if(BUILD_EXCHCXX)
       -DBUILD_SHARED_LIBS=ON
       -DEXCHCXX_ENABLE_CUDA=ON
       -DEXCHCXX_ENABLE_TESTS=OFF
-      -DEXCHCXX_ENABLE_LIBXC=${EXCHCXX_WITH_LIBXC}
+      # Builtin GPU kernels only -- see the note above. This also keeps ExchCXX
+      # from FetchContent'ing a third copy of libxc at configure time.
+      -DEXCHCXX_ENABLE_LIBXC=OFF
       -DCMAKE_POSITION_INDEPENDENT_CODE=ON
       -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
       -DCMAKE_INSTALL_LIBDIR:PATH=lib
-      # With EXCHCXX_ENABLE_LIBXC=ON, ExchCXX FetchContents its own CPU libxc
-      # and installs it beside libexchcxx.so. $ORIGIN lets libexchcxx.so resolve
-      # it without LD_LIBRARY_PATH (RUNPATH does not inherit from the loader).
-      # Note: unlike the libxc ExternalProject above, the C/CXX link templates
-      # are deliberately NOT overridden here. Those templates drop
-      # <SONAME_FLAG><TARGET_SONAME>, and ExchCXX's FetchContent'd libxc would
-      # then be recorded in libexchcxx.so's DT_NEEDED by its build-tree path,
-      # which does not exist after install.
       -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON
       -DCMAKE_INSTALL_RPATH:STRING=$ORIGIN
       CMAKE_CACHE_ARGS -DCMAKE_CUDA_ARCHITECTURES:STRING=${CMAKE_CUDA_ARCHITECTURES}
