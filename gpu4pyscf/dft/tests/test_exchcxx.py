@@ -35,13 +35,20 @@ Reference is CPU libxc rather than the CUDA libxc build, because CPU libxc is
 what both GPU backends are expected to reproduce and it is available whichever
 backend this process loaded.
 
-Tolerances here are looser than in test_libxc.py. ExchCXX and libxc do not
-share per-functional density cutoffs: below libxc's threshold libxc returns
-exactly 0.0 while ExchCXX returns the analytically correct small value, so the
-relative error at those grid points is 1.0 by construction. The error metric
-below is min(relative, absolute), which turns those points into a small
-absolute difference instead. See exchcxx_vs_libxc_repro.py in the repository
-root for the full analysis.
+ExchCXX and libxc do not share per-functional density cutoffs. Below libxc's
+threshold libxc returns exactly 0.0, while ExchCXX evaluates the functional and
+returns the analytically correct value. At rho ~ 2e-15 on a real molecular grid
+that is a 9e-06 disagreement in exc for LDA_X (= -Cx*rho^(1/3), which decays
+only as rho^(1/3)) and ~1e+20 in fxc (v2rho2 ~ rho^(-5/3) genuinely diverges).
+Neither is a functional-form error, and neither affects a real calculation:
+those points carry grid weight times a density of 1e-15.
+
+So the assertions below compare only grid points above RHO_FLOOR, where both
+libraries actually evaluate the functional and agreement is at machine
+precision. The unmasked error is still computed and printed on every line, and
+test_low_density_only_disagreement asserts that the disagreement really is
+confined to low density rather than assuming it. See exchcxx_vs_libxc_repro.py
+in the repository root for the underlying analysis.
 """
 
 import os
@@ -57,6 +64,12 @@ from pyscf.dft.numint import NumInt as numint_cpu
 # The name of the shared library the exchcxx backend needs. Its absence means
 # the tree was built without -DBUILD_EXCHCXX=ON.
 EXCHCXX_SONAME = 'libxc_exchcxx.so'
+
+# Grid points with a total density below this are excluded from the assertions:
+# libxc zeroes the functional somewhere under ~1e-14 (the exact value is
+# per-functional) while ExchCXX keeps evaluating it. Well above every libxc
+# threshold, and still ~5 orders below any density that carries chemistry.
+RHO_FLOOR = 1e-10
 
 
 def _exchcxx_lib_path():
@@ -97,7 +110,28 @@ def tearDownModule():
 def _diff(dat, ref):
     """Pointwise min(relative, absolute) error, as used by test_libxc.py."""
     d = dat - ref
-    return np.min((abs(d / (ref + 1e-300)), abs(d)), axis=0)
+    with np.errstate(over='ignore', invalid='ignore'):
+        rel = abs(d / (ref + 1e-300))
+    return np.minimum(np.nan_to_num(rel, nan=np.inf), abs(d))
+
+
+def _total_rho(rho, spin):
+    """Total density per grid point, whatever the xctype/spin packing."""
+    rho = np.asarray(rho)
+    if spin != 0:
+        # (2, ncomp, ngrids) or (2, ngrids)
+        return sum(_total_rho(r, 0) for r in rho)
+    # LDA is (ngrids,); GGA/MGGA is (ncomp, ngrids) with rho itself at row 0
+    return rho if rho.ndim == 1 else rho[0]
+
+
+def _worst(dat, ref, mask):
+    """Largest error over the masked grid points; 0.0 if the mask is empty."""
+    err = _diff(np.asarray(dat), np.asarray(ref))
+    # Errors are shaped (..., ngrids); broadcast the per-point mask over the
+    # leading component axes.
+    err = err.reshape(-1, err.shape[-1])[:, mask]
+    return float(err.max()) if err.size else 0.0
 
 
 @unittest.skipUnless(HAVE_EXCHCXX,
@@ -107,8 +141,13 @@ def _diff(dat, ref):
 class ExchCXXAccuracy(unittest.TestCase):
     """ExchCXX GPU results vs CPU libxc, one functional per assertion."""
 
-    def _check_xc(self, xc, spin=0, deriv=1,
-                  exc_tol=1e-5, vxc_tol=1e-5, fxc_tol=1e-3):
+    LABELS = ('exc', 'vxc', 'fxc', 'kxc')
+
+    def _eval_both(self, xc, spin, deriv):
+        """Run xc on GPU (ExchCXX) and CPU (libxc) over the same molecular grid.
+
+        Returns (got, ref, dense_mask, on_gpu).
+        """
         # Imported lazily so that collection still works on a machine with no
         # GPU: the skip decorators fire before this line is ever reached.
         import cupy
@@ -131,6 +170,7 @@ class ExchCXXAccuracy(unittest.TestCase):
 
         ref = ni_cpu.eval_xc_eff(xc, rho, deriv=deriv, xctype=xctype)
         got = ni_gpu.eval_xc_eff(xc, cupy.array(rho), deriv=deriv, xctype=xctype)
+        got = [None if g is None else g.get() for g in got]
 
         # A functional with no ExchCXX kernel falls back to CPU libxc inside
         # eval_xc_eff, which would make this comparison trivially exact and hide
@@ -138,28 +178,49 @@ class ExchCXXAccuracy(unittest.TestCase):
         xcfuns = ni_gpu._init_xcfuns(xc, spin)
         on_gpu = all(f.on_gpu for f, _ in xcfuns)
 
-        labels = ('exc', 'vxc', 'fxc', 'kxc')
+        dense = _total_rho(rho, spin) > RHO_FLOOR
+        return got, ref, dense, on_gpu
+
+    def _check_xc(self, xc, spin=0, deriv=1,
+                  exc_tol=1e-10, vxc_tol=1e-10, fxc_tol=1e-8):
+        got, ref, dense, on_gpu = self._eval_both(xc, spin, deriv)
+
+        # An empty or near-empty mask would make every assertion below
+        # vacuously true. A default PySCF grid for this molecule has tens of
+        # thousands of points; a chemically meaningful fraction sits well above
+        # RHO_FLOOR, so anything under a thousand means the mask is broken.
+        self.assertGreater(dense.sum(), 1000,
+                           f'only {dense.sum()} of {dense.size} grid points are '
+                           f'above rho={RHO_FLOOR:g}; the mask is wrong, not '
+                           f'the backend')
+
         tols = (exc_tol, vxc_tol, fxc_tol, None)
-        worst = {}
+        masked, unmasked = {}, {}
         for i in range(deriv + 1):
             if got[i] is None or ref[i] is None:
                 continue
-            err = _diff(got[i].get(), ref[i]).max()
-            worst[labels[i]] = err
+            label = self.LABELS[i]
+            masked[label] = _worst(got[i], ref[i], dense)
+            unmasked[label] = _worst(got[i], ref[i], np.ones_like(dense))
 
-        summary = '  '.join(f'{k}={v:.3e}' for k, v in worst.items())
-        print(f'[exchcxx] {xc} spin={spin} on_gpu={on_gpu}  {summary}',
-              flush=True)
+        summary = '  '.join(
+            f'{k}={masked[k]:.3e} (all-rho {unmasked[k]:.3e})' for k in masked)
+        print(f'[exchcxx] {xc} spin={spin} on_gpu={on_gpu} '
+              f'ngrids={dense.sum()}/{dense.size} above rho={RHO_FLOOR:g}\n'
+              f'          {summary}', flush=True)
 
         self.assertTrue(on_gpu,
                         f'{xc} has no ExchCXX kernel; it silently fell back to '
                         f'CPU libxc, so this comparison proves nothing')
 
         for i in range(deriv + 1):
-            if labels[i] not in worst or tols[i] is None:
+            label = self.LABELS[i]
+            if label not in masked or tols[i] is None:
                 continue
-            self.assertLess(worst[labels[i]], tols[i],
-                            f'{xc} spin={spin} {labels[i]} exceeds tolerance')
+            self.assertLess(masked[label], tols[i],
+                            f'{xc} spin={spin} {label} exceeds tolerance at '
+                            f'rho > {RHO_FLOOR:g} (all-rho worst was '
+                            f'{unmasked[label]:.3e})')
 
     # --- restricted ---------------------------------------------------------
 
@@ -173,13 +234,17 @@ class ExchCXXAccuracy(unittest.TestCase):
         self._check_xc('GGA_X_B88', deriv=2)
 
     def test_GGA_c_pbe(self):
-        self._check_xc('GGA_C_PBE', deriv=2, fxc_tol=1e-2)
+        # fxc_tol matches test_libxc.py's own value for this functional: the
+        # CUDA libxc backend needs 1e-4 here too, so the looseness is a property
+        # of PBE correlation's second derivative, not of ExchCXX.
+        self._check_xc('GGA_C_PBE', deriv=2, fxc_tol=1e-4)
 
     def test_GGA_b3lyp(self):
-        self._check_xc('HYB_GGA_XC_B3LYP', deriv=2, fxc_tol=1e-2)
+        self._check_xc('HYB_GGA_XC_B3LYP', deriv=2)
 
     def test_mGGA_c_m06(self):
-        self._check_xc('MGGA_C_M06', deriv=2, fxc_tol=1e-2)
+        # See test_GGA_c_pbe: test_libxc.py also uses 1e-4 for M06 fxc.
+        self._check_xc('MGGA_C_M06', deriv=2, fxc_tol=1e-4)
 
     def test_mGGA_x_tpss(self):
         self._check_xc('MGGA_X_TPSS', deriv=1)
@@ -197,6 +262,38 @@ class ExchCXXAccuracy(unittest.TestCase):
 
     def test_u_mGGA_c_m06(self):
         self._check_xc('MGGA_C_M06', spin=1, deriv=1)
+
+    # --- the cutoff difference itself ---------------------------------------
+
+    def test_low_density_only_disagreement(self):
+        """The libxc/ExchCXX gap must live entirely below RHO_FLOOR.
+
+        The other tests mask low-density points away, which would also hide a
+        real error if one ever appeared there. This asserts the shape of the
+        disagreement instead of assuming it: for LDA_X, whose whole all-rho
+        error is the cutoff artifact, every point that disagrees by more than
+        machine precision must be a point where libxc returned exactly 0.0
+        while ExchCXX returned something finite.
+        """
+        got, ref, dense, on_gpu = self._eval_both('LDA_X', spin=0, deriv=1)
+        self.assertTrue(on_gpu)
+
+        exc_gpu, exc_cpu = np.asarray(got[0]), np.asarray(ref[0])
+        bad = _diff(exc_gpu, exc_cpu) > 1e-12
+
+        print(f'[exchcxx] LDA_X cutoff check: {bad.sum()} of {bad.size} points '
+              f'disagree; all have libxc exc == 0', flush=True)
+
+        if bad.any():
+            # Every disagreeing point is one libxc zeroed out ...
+            self.assertTrue(np.all(exc_cpu[bad] == 0.0),
+                            'ExchCXX disagrees with libxc at a point where '
+                            'libxc did NOT zero the functional -- that is a '
+                            'real error, not the density-cutoff convention')
+            # ... and all of them sit below the floor the other tests apply.
+            self.assertTrue(np.all(~dense[bad]),
+                            f'a disagreeing point has rho > {RHO_FLOOR:g}; the '
+                            f'masking used by the other tests is hiding it')
 
 
 @unittest.skipUnless(HAVE_EXCHCXX,
