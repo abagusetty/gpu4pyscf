@@ -1,0 +1,152 @@
+/home/runner/sycl-venv/lib/python3.11/site-packages/setuptools/dist.py:334: InformationOnly: Normalizing '0.21.0dev7+10.g5da183e95' to '0.21.0.dev7+10.g5da183e95'
+  self.metadata.version = self._normalize_version(self.metadata.version)
+
+
+--------------------------------------------------------------------------------
+-- Trying 'Ninja' generator
+--------------------------------
+---------------------------
+----------------------
+-----------------
+------------
+-------
+--
+The --no-warn-unused-cli option is deprecated.  Use -Wno-unused-cli instead.
+-- The C compiler identification is IntelLLVM 2026.1.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /opt/intel/oneapi/compiler/2026.1/bin/icx - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- The CXX compiler identification is IntelLLVM 2026.1.1
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /opt/intel/oneapi/compiler/2026.1/bin/icpx - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (0.5s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/runner/dpnp/_cmake_test_compile/build
+--
+-------
+------------
+-----------------
+----------------------
+---------------------------
+--------------------------------
+-- Trying 'Ninja' generator - success
+--------------------------------------------------------------------------------
+
+Configuring Project
+  Working directory:
+    /home/runner/dpnp/_skbuild/linux-x86_64-3.11/cmake-build
+  Command:
+    /home/runner/sycl-venv/lib/python3.11/site-packages/cmake/data/bin/cmake /home/runner/dpnp -G Ninja -DCMAKE_MAKE_PROGRAM:FILEPATH=/home/runner/sycl-venv/bin/ninja --no-warn-unused-cli -DCMAKE_INSTALL_PREFIX:PATH=/home/runner/dpnp/_skbuild/linux-x86_64-3.11/cmake-install -DPYTHON_VERSION_STRING:STRING=3.11.16 -DSKBUILD:INTERNAL=TRUE -DCMAKE_MODULE_PATH:PATH=/home/runner/sycl-venv/lib/python3.11/site-packages/skbuild/resources/cmake -DPYTHON_EXECUTABLE:PATH=/home/runner/sycl-venv/bin/python -DPYTHON_INCLUDE_DIR:PATH=/opt/hostedtoolcache/Python/3.11.16/x64/include/python3.11 -DPYTHON_LIBRARY:PATH=/opt/hostedtoolcache/Python/3.11.16/x64/lib/libpython3.11.so -DPython_EXECUTABLE:PATH=/home/runner/sycl-venv/bin/python -DPython_ROOT_DIR:PATH=/home/runner/sycl-venv -DPython_FIND_REGISTRY:STRING=NEVER -DPython_INCLUDE_DIR:PATH=/opt/hostedtoolcache/Python/3.11.16/x64/include/python3.11 -DPython_NumPy_INCLUDE_DIRS:PATH=/home/runner/sycl-venv/lib/python3.11/site-packages/numpy/_core/include -DPython3_EXECUTABLE:PATH=/home/runner/sycl-venv/bin/python -DPython3_ROOT_DIR:PATH=/home/runner/sycl-venv -DPython3_FIND_REGISTRY:STRING=NEVER -DPython3_INCLUDE_DIR:PATH=/opt/hostedtoolcache/Python/3.11.16/x64/include/python3.11 -DPython3_NumPy_INCLUDE_DIRS:PATH=/home/runner/sycl-venv/lib/python3.11/site-packages/numpy/_core/include -DCMAKE_MAKE_PROGRAM:FILEPATH=/home/runner/sycl-venv/bin/ninja -DCMAKE_C_COMPILER:PATH=icx -DCMAKE_CXX_COMPILER:PATH=icpx -DDpctl_ROOT=/home/runner/sycl-venv/lib/python3.11/site-packages/dpctl/resources/cmake -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_BUILD_TYPE:STRING=Release
+
+The --no-warn-unused-cli option is deprecated.  Use -Wno-unused-cli instead.
+-- The CXX compiler identification is IntelLLVM 2026.1.1
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /opt/intel/oneapi/compiler/2026.1/bin/icpx - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- SYCL Compiler version: 20260101
+-- SYCL_INCLUDE_DIR: /opt/intel/oneapi/compiler/2026.1/include
+-- SYCL_LIBRARY=/opt/intel/oneapi/compiler/2026.1/lib/libsycl.so
+-- MKL_VERSION: 2026.1.0
+-- MKL_ROOT: /opt/intel/oneapi/mkl/2026.1
+-- MKL_ARCH: intel64
+-- MKL_SYCL_LINK: dynamic
+-- MKL_LINK: dynamic
+-- MKL_SYCL_INTERFACE_FULL: intel_ilp64
+-- MKL_INTERFACE_FULL: intel_ilp64
+-- MKL_SYCL_THREADING: tbb_thread
+-- MKL_THREADING: tbb_thread
+-- MKL_SYCL_MPI: None, set to ` intelmpi` by default
+-- MKL_MPI: None, set to ` intelmpi` by default
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_scalapack_ilp64.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_cdft_core.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_intel_ilp64.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_tbb_thread.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_core.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_blacs_intelmpi_ilp64.so
+-- Could NOT find mkl_sycl_distributed_dft for target MKL::MKL_SYCL_DISTRIBUTED_DFT
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_blas.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_lapack.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_dft.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_sparse.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_data_fitting.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_rng.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_stats.so
+-- Found /opt/intel/oneapi/mkl/2026.1/lib/libmkl_sycl_vm.so
+-- Found /opt/intel/oneapi/tbb/2023.1/lib/intel64/gcc4.8/libtbb.so.12
+-- oneDPL: ONEDPL_PAR_BACKEND=tbb, disable OpenMP backend
+-- Performing Test _fsycl_option
+-- Performing Test _fsycl_option - Success
+-- Looking for C++ include sycl/sycl.hpp
+-- Looking for C++ include sycl/sycl.hpp - found
+-- Adding -fsycl compiler option
+-- Found Python: /opt/hostedtoolcache/Python/3.11.16/x64/include/python3.11 (found suitable version "3.11.16", required range is "3.10...<3.15") found components: Development.Module NumPy Interpreter
+-- pybind11 v3.1.0 
+-- Performing Test HAS_INTEL_IPO
+-- Performing Test HAS_INTEL_IPO - Success
+-- Found Cython: /home/runner/sycl-venv/bin/cython
+-- Found Python: /home/runner/sycl-venv/bin/python (found suitable version "3.11.16", minimum required is "3.10") found components: Interpreter Development.Module
+-- Found Dpctl: /home/runner/sycl-venv/lib/python3.11/site-packages/dpctl/include (found version "0.23.0dev0+351.g0bae6a8e7")
+-- Dpctl_INCLUDE_DIR=/home/runner/sycl-venv/lib/python3.11/site-packages/dpctl/include
+-- Found Python: /opt/hostedtoolcache/Python/3.11.16/x64/include/python3.11 (found version "3.11.16") found components: Development.Module
+-- Using dpnp_algo
+-- Using dpnp_algo_utils
+-- Using dpnp_algo_random
+-- Configuring done (5.7s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/runner/dpnp/_skbuild/linux-x86_64-3.11/cmake-build
+[1/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/src/dpnp_iface_fptr.cpp.o
+[2/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/src/memory_sycl.cpp.o
+[3/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/kernels/dpnp_krnl_common.cpp.o
+[4/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/kernels/dpnp_krnl_arraycreation.cpp.o
+[5/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/kernels/dpnp_krnl_random.cpp.o
+[6/291] Generating CXX source dpnp/tensor/_usmarray.cxx
+[7/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/kernels/dpnp_krnl_sorting.cpp.o
+[8/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/src/verbose.cpp.o
+[9/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/src/queue_sycl.cpp.o
+[10/291] Generating CXX source dpnp/tensor/_compute_follows_data.cxx
+[11/291] Building CXX object dpnp/backend/CMakeFiles/dpnp_backend_c.dir/src/dpnp_random_state.cpp.o
+[12/291] Building CXX object dpnp/tensor/CMakeFiles/simplify_iteration_space.dir/libtensor/source/simplify_iteration_space.cpp.o
+[13/291] Generating CXX source dpnp/tensor/_flags.cxx
+[14/291] Generating CXX source dpnp/tensor/_slicing.cxx
+[15/291] Generating CXX source dpnp/tensor/_types.cxx
+[16/291] Generating CXX source dpnp/tensor/_dlpack.cxx
+[17/291] Linking CXX shared library dpnp/backend/libdpnp_backend_c.so
+[18/291] Generating CXX source dpnp/tensor/_stride_utils.cxx
+[19/291] Generating CXX source dpnp/dpnp_algo/dpnp_algo.cxx
+[20/291] Generating CXX source dpnp/dpnp_utils/dpnp_algo_utils.cxx
+[21/291] Building CXX object dpnp/tensor/CMakeFiles/_compute_follows_data.dir/_compute_follows_data.cxx.o
+[22/291] Building CXX object dpnp/tensor/CMakeFiles/_flags.dir/_flags.cxx.o
+[23/291] Building CXX object dpnp/tensor/CMakeFiles/_stride_utils.dir/_stride_utils.cxx.o
+[24/291] Building CXX object dpnp/tensor/CMakeFiles/_usmarray.dir/_usmarray.cxx.o
+[25/291] Linking CXX shared module dpnp/tensor/_usmarray.cpython-311-x86_64-linux-gnu.so
+[26/291] Generating CXX source dpnp/random/dpnp_algo_random.cxx
+[27/291] Linking CXX static library dpnp/tensor/libsimplify_iteration_space.a
+[28/291] Building CXX object dpnp/tensor/CMakeFiles/_types.dir/_types.cxx.o
+[29/291] Building CXX object dpnp/tensor/CMakeFiles/_dlpack.dir/_dlpack.cxx.o
+[30/291] Building CXX object dpnp/tensor/CMakeFiles/_slicing.dir/_slicing.cxx.o
+[31/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/copy_for_reshape.cpp.o
+[32/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/tensor_ctors.cpp.o
+[33/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/copy_as_contig.cpp.o
+[34/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/linear_sequences.cpp.o
+[35/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/copy_for_roll.cpp.o
+[36/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/accumulators.cpp.o
+[37/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/eye_ctor.cpp.o
+[38/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/copy_and_cast_usm_to_usm.cpp.o
+[39/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/full_ctor.cpp.o
+[40/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/boolean_advanced_indexing.cpp.o
+[41/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/zeros_ctor.cpp.o
+[42/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/copy_numpy_ndarray_into_usm_ndarray.cpp.o
+[43/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/triul_ctor.cpp.o
+[44/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/device_support_queries.cpp.o
+[45/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/integer_advanced_indexing.cpp.o
+[46/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_accumulation_impl.dir/libtensor/source/tensor_accumulation.cpp.o
+[47/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_accumulation_impl.dir/libtensor/source/accumulators/accumulators_common.cpp.o
+[48/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/repeat.cpp.o
+[49/291] Building CXX object dpnp/tensor/CMakeFiles/_tensor_impl.dir/libtensor/source/clip.cpp.o
