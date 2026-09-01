@@ -1,0 +1,8 @@
+dpctl 0.23.0dev0+351.g0bae6a8e7
+<dpctl.SyclDevice [backend_type.opencl, device_type.cpu,  AMD EPYC 9V74 80-Core Processor                ] at 0x7f32029ea0b0>
+dpnp 0.21.0dev7+10.g5da183e95 OK
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/cupy/cuda.py:1076: RuntimeWarning: Failed to replace dpctl device queue cache: _MasterQueueCache: device <dpctl.SyclDevice [backend_type.opencl, device_type.cpu,  AMD EPYC 9V74 80-Core Processor                ] at 0x7f4e25f9c630> not found among the 0 enumerated GPU(s); cannot map it to a master queue
+  warnings.warn(
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  sycl_set_device: no queue registered for device 0
+/home/runner/work/_temp/567b674e-e654-4c30-901d-2ef6481d9e62.sh: line 6: 53924 Aborted                 (core dumped) python -c "import gpu4pyscf; print('gpu4pyscf import OK')"
