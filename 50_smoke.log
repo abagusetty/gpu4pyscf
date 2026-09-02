@@ -1,0 +1,27 @@
+dpctl 0.23.0dev0+351.g0bae6a8e7
+<dpctl.SyclDevice [backend_type.opencl, device_type.cpu,  AMD EPYC 9V45 96-Core Processor                ] at 0x7f8298df11b0>
+dpnp 0.21.0dev7+10.g5da183e95 OK
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/cutensor.py:154: UserWarning: using cupy as the tensor contraction engine.
+  warnings.warn(f'using {contract_engine} as the tensor contraction engine.')
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/__init__.py", line 19, in <module>
+    from . import lib, grad, hessian, solvent, scf, dft, tdscf, nac
+  File "/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/grad/__init__.py", line 1, in <module>
+    from gpu4pyscf.grad import rhf
+  File "/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/grad/rhf.py", line 23, in <module>
+    from gpu4pyscf.grad.dispersion import get_dispersion
+  File "/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/grad/dispersion.py", line 25, in <module>
+    from gpu4pyscf.scf.dispersion import check_disp, parse_disp
+  File "/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/scf/__init__.py", line 18, in <module>
+    from .ghf import GHF
+  File "/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/scf/ghf.py", line 17, in <module>
+    from cupyx.scipy.linalg import block_diag
+  File "/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/cupyx/scipy/__init__.py", line 4, in <module>
+    from . import sparse   # expose cupyx.scipy.sparse
+    ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/cupyx/scipy/sparse/__init__.py", line 3, in <module>
+    from . import linalg
+  File "/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/cupyx/scipy/sparse/linalg.py", line 7, in <module>
+    from dpnp.scipy.sparse.linalg import (
+ModuleNotFoundError: No module named 'dpnp.scipy.sparse'
