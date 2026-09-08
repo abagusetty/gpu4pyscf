@@ -30,8 +30,11 @@
 #endif
 #define WARPS           8
 #define THREADS         256
-#define NG_PER_BLOCK    WARP_SIZE
 #define FT_AO_THREADS   (WARP_SIZE*4)
+// One shell per block (nsh_per_block == 1): every thread in the block then
+// sees the same shell's iprim, so the primitive loop's __syncthreads() trip
+// count is uniform without needing a per-block max-iprim workaround.
+#define NG_PER_BLOCK    FT_AO_THREADS
 #define GOUT_WIDTH      30
 // pi^1.5
 #define OVERLAP_FAC     5.56832799683170787
@@ -71,7 +74,6 @@ void ft_ao_bdiv_kernel(double *out, RysIntEnvVars envs, int nGv, double *Gv)
 
     int gx_len = (AUXL+1) * FT_AO_THREADS;
     __shared__ double g[(AUXL+1)*FT_AO_THREADS * 6];
-    __shared__ int block_iprim[FT_AO_THREADS/NG_PER_BLOCK];
     double *gxR = g + (AUXL+1) * NG_PER_BLOCK * sh_id_in_block + Gv_id_in_block;
     double *gxI = gxR + gx_len;
     double *gyR = gxR + gx_len*2;
@@ -99,25 +101,8 @@ void ft_ao_bdiv_kernel(double *out, RysIntEnvVars envs, int nGv, double *Gv)
     double *expi = env + bas[sh_id_clamped*BAS_SLOTS+PTR_EXP];
     double *ci = env + bas[sh_id_clamped*BAS_SLOTS+PTR_COEFF];
     double *ri = env + atm[ia*ATM_SLOTS+PTR_COORD];
-    // The primitive loop below calls __syncthreads() every iteration, so its
-    // trip count must be uniform across the whole block. SortedGTO groups
-    // shells by (l, nprim) but does not align those groups to
-    // nsh_per_block boundaries, so a block routinely spans two groups with
-    // different nprim. Loop to the block-wide max instead of this lane's
-    // own iprim, and guard the per-iteration work so a lane with fewer
-    // primitives simply does nothing on the extra iterations.
-    if (Gv_id_in_block == 0) {
-        block_iprim[sh_id_in_block] = iprim;
-    }
-    __syncthreads();
-    int max_iprim = 0;
-#pragma unroll
-    for (int i = 0; i < FT_AO_THREADS/NG_PER_BLOCK; ++i) {
-        max_iprim = max(max_iprim, block_iprim[i]);
-    }
-    for (int ip = 0; ip < max_iprim; ++ip) {
+    for (int ip = 0; ip < iprim; ++ip) {
         __syncthreads();
-        if (ip < iprim) {
         double ai = expi[ip];
         double xi = ri[0];
         double yi = ri[1];
@@ -184,9 +169,7 @@ void ft_ao_bdiv_kernel(double *out, RysIntEnvVars envs, int nGv, double *Gv)
                 s1zI = s2zI;
             }
         }
-        }
         __syncthreads();
-        if (ip < iprim) {
 #pragma unroll
         for (int n = 0; n < aux_nf; ++n) {
             if (n >= nfi) break;
@@ -203,7 +186,6 @@ void ft_ao_bdiv_kernel(double *out, RysIntEnvVars envs, int nGv, double *Gv)
             double xyI = xR * yI + xI * yR;
             goutR[n] += xyR * zR - xyI * zI;
             goutI[n] += xyR * zI + xyI * zR;
-        }
         }
     }
 
