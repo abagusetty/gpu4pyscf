@@ -1,0 +1,6 @@
+/opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages/setuptools/_distutils/dist.py:289: UserWarning: Unknown distribution option: 'tests_require'
+  warnings.warn(msg)
+running build
+running build_py
+cmake -S/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib -Bbuild/temp.linux-x86_64/gpu4pyscf -DBUILD_LIBXC=ON -DUSE_SYCL=ON -DCMAKE_CXX_COMPILER=icpx -DCMAKE_C_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DUSE_SYCL=ON -DCMAKE_BUILD_TYPE=Release -DGPU4PYSCF_SYCL_AOT=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+error: command '/home/runner/sycl-venv/bin/cmake' failed: No such file or directory
