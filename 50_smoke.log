@@ -1,0 +1,6 @@
+dpctl 0.23.0dev1+6.g0a09a6a374
+<dpctl.SyclDevice [backend_type.opencl, device_type.cpu,  AMD EPYC 9V45 96-Core Processor                ] at 0x7f241992aa30>
+dpnp 0.21.0dev14+4.g11427b72da0.dirty OK
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/cutensor.py:158: UserWarning: using cupy as the tensor contraction engine.
+  warnings.warn(f'using {contract_engine} as the tensor contraction engine.')
+gpu4pyscf import OK
