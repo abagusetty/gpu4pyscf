@@ -1,0 +1,274 @@
+/home/runner/micromamba/envs/sycl-ci/lib/python3.12/site-packages/wheel/bdist_wheel.py:4: FutureWarning: The 'wheel' package is no longer the canonical location of the 'bdist_wheel' command, and will be removed in a future release. Please update to setuptools v70.1 or later which contains an integrated version of this command.
+  warn(
+/home/runner/micromamba/envs/sycl-ci/lib/python3.12/site-packages/setuptools/_distutils/dist.py:318: UserWarning: Unknown distribution option: 'tests_require'
+  warnings.warn(msg)
+running build
+running build_py
+cmake -S/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib -Bbuild/temp.linux-x86_64/gpu4pyscf -DBUILD_LIBXC=OFF -DUSE_SYCL=ON -DUSE_CUDA=OFF -DCMAKE_CXX_COMPILER=icpx -DCMAKE_C_COMPILER=icx -DCMAKE_Fortran_COMPILER=ifx -DUSE_SYCL=ON -DCMAKE_BUILD_TYPE=Release -DGPU4PYSCF_SYCL_AOT=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+-- The C compiler identification is IntelLLVM 2026.1.1
+-- The CXX compiler identification is IntelLLVM 2026.1.1
+-- The Fortran compiler identification is IntelLLVM 2026.1.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /home/runner/micromamba/envs/sycl-ci/bin/icx - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /home/runner/micromamba/envs/sycl-ci/bin/icpx - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting Fortran compiler ABI info
+-- Detecting Fortran compiler ABI info - done
+-- Check for working Fortran compiler: /home/runner/micromamba/envs/sycl-ci/bin/ifx - skipped
+-- SYCL build: CMAKE_BUILD_TYPE=Release
+Build type Release
+-- Found OpenMP_C: -fiopenmp (found version "5.1")
+-- Found OpenMP_CXX: -fiopenmp (found version "5.1")
+-- Found OpenMP_Fortran: -fiopenmp (found version "5.2")
+-- Found OpenMP: TRUE (found version "5.1")
+-- MKL_VERSION: 2026.1.0
+-- MKL_ROOT: /home/runner/micromamba/envs/sycl-ci
+-- MKL_ARCH: intel64
+-- MKL_SYCL_LINK: None, set to ` dynamic` by default
+-- MKL_LINK: None, set to ` dynamic` by default
+-- MKL_SYCL_INTERFACE_FULL: None, set to ` intel_ilp64` by default
+-- MKL_INTERFACE_FULL: None, set to ` intel_ilp64` by default
+-- MKL_SYCL_THREADING: None, set to ` tbb_thread` by default
+-- MKL_THREADING: None, set to ` intel_thread` by default
+-- MKL_SYCL_MPI: None, set to ` intelmpi` by default
+-- MKL_MPI: None, set to ` intelmpi` by default
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_scalapack_ilp64.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_cdft_core.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_intel_ilp64.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_intel_thread.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_core.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_blacs_intelmpi_ilp64.so
+-- Could NOT find mkl_sycl_distributed_dft for target MKL::MKL_SYCL_DISTRIBUTED_DFT
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_sycl_blas.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_sycl_lapack.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_sycl_dft.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_sycl_sparse.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_sycl_data_fitting.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_sycl_rng.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_sycl_stats.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_sycl_vm.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libmkl_tbb_thread.so
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libtbb.so.12
+-- Found /home/runner/micromamba/envs/sycl-ci/lib/libiomp5.so
+-- SYCL backend: BUILD_EXCHCXX=ON, BUILD_LIBXC=OFF
+-- ExchCXX: not found -- building from source (~35 min)
+-- Configuring done (1.9s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf
+cmake --build build/temp.linux-x86_64/gpu4pyscf -j 8
+[  1%] Creating directories for 'ExchCXX'
+[  2%] Building CXX object gsycl/CMakeFiles/gsycl.dir/sycl_api_python.cpp.o
+[  3%] Performing download step (git clone) for 'ExchCXX'
+Cloning into 'ExchCXX'...
+HEAD is now at 1274182 Prevent device-side macro from being defined SYCL_DEVICE_ONLY, when a file is accidentally compiled with fsycl & EXCHCXX_ENABLE_SYCL=OFF
+[  4%] Performing disconnected update step for 'ExchCXX'
+-- Already at requested ref: 1274182f28624fd173d758051605908827ebe9a4
+[  5%] No patch_disconnected step for 'ExchCXX'
+[  6%] Performing configure step for 'ExchCXX'
+[  7%] Linking CXX shared library /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/libgsycl.so
+-- The C compiler identification is IntelLLVM 2026.1.1
+llvm-foreach: adjusted number of threads to 4 (max safe available).
+-- The CXX compiler identification is IntelLLVM 2026.1.1
+-- Detecting C compiler ABI info
+[  7%] Built target gsycl
+[  8%] Building CXX object onemkl_helper/CMakeFiles/onemkl_helper.dir/onemkl_lapack.cpp.o
+[  9%] Building CXX object gint/CMakeFiles/gint.dir/g2e.c.o
+[ 10%] Building CXX object gvhf-rys/CMakeFiles/gvhf_rys.dir/rys_jk_driver.cu.o
+[ 10%] Building CXX object cupy_helper/CMakeFiles/cupy_helper.dir/transpose.cu.o
+[ 11%] Building CXX object sem/CMakeFiles/sem.dir/ss_kernel.cu.o
+[ 12%] Building CXX object gvhf-md/CMakeFiles/gvhf_md.dir/md_contract_j.cu.o
+[ 13%] Building Fortran object solvent/CMakeFiles/solvent.dir/mnsol_interface.f90.o
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10006: ignoring unknown option '-fno-system-debug'
+ifx: command line warning #10006: ignoring unknown option '-fsycl-default-sub-group-size=32'
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /home/runner/micromamba/envs/sycl-ci/bin/icx - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10006: ignoring unknown option '-fno-system-debug'
+ifx: command line warning #10006: ignoring unknown option '-fsycl-default-sub-group-size=32'
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/g2e.c:21:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/g2e.h:17:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/gint.h:21:
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl/sycl_device.hpp:118:9: warning: 'NAN' macro redefined [-Wmacro-redefined]
+  118 | #define NAN std::numeric_limits<float>::quiet_NaN()
+      |         ^
+/usr/include/math.h:98:11: note: previous definition is here
+   98 | #  define NAN (__builtin_nanf (""))
+      |           ^
+1 warning generated.
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/g2e.c:21:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/g2e.h:17:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/gint.h:21:
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl/sycl_device.hpp:118:9: warning: 'NAN' macro redefined [-Wmacro-redefined]
+  118 | #define NAN std::numeric_limits<float>::quiet_NaN()
+      |         ^
+/usr/include/math.h:98:11: note: previous definition is here
+   98 | #  define NAN (__builtin_nanf (""))
+      |           ^
+1 warning generated.
+[ 14%] Building CXX object gint/CMakeFiles/gint.dir/pair_data.c.o
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/onemkl_helper/onemkl_lapack.cpp:144:1: warning: non-void function does not return a value in all control paths [-Wreturn-type]
+  144 | }
+      | ^
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/onemkl_helper/onemkl_lapack.cpp:156:1: warning: non-void function does not return a value in all control paths [-Wreturn-type]
+  156 | }
+      | ^
+2 warnings generated.
+[ 15%] Linking CXX shared library /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/libonemkl_helper.so
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/pair_data.c:19:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/g2e.h:17:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/gint.h:21:
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl/sycl_device.hpp:118:9: warning: 'NAN' macro redefined [-Wmacro-redefined]
+  118 | #define NAN std::numeric_limits<float>::quiet_NaN()
+      |         ^
+/usr/include/math.h:98:11: note: previous definition is here
+   98 | #  define NAN (__builtin_nanf (""))
+      |           ^
+1 warning generated.
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/pair_data.c:19:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/g2e.h:17:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gint/gint.h:21:
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl/sycl_device.hpp:118:9: warning: 'NAN' macro redefined [-Wmacro-redefined]
+  118 | #define NAN std::numeric_limits<float>::quiet_NaN()
+      |         ^
+/usr/include/math.h:98:11: note: previous definition is here
+   98 | #  define NAN (__builtin_nanf (""))
+      |           ^
+1 warning generated.
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10006: ignoring unknown option '-fno-system-debug'
+ifx: command line warning #10006: ignoring unknown option '-fsycl-default-sub-group-size=32'
+[ 15%] Building CXX object gint/CMakeFiles/gint.dir/bpcache.cu.o
+[ 16%] Building CXX object gint/CMakeFiles/gint.dir/constant.cu.o
+[ 16%] Building Fortran object solvent/CMakeFiles/solvent.dir/mnsol_mem.F.o
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10006: ignoring unknown option '-fno-system-debug'
+ifx: command line warning #10006: ignoring unknown option '-fsycl-default-sub-group-size=32'
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10006: ignoring unknown option '-fno-system-debug'
+ifx: command line warning #10006: ignoring unknown option '-fsycl-default-sub-group-size=32'
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /home/runner/micromamba/envs/sycl-ci/bin/icpx - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10006: ignoring unknown option '-fno-system-debug'
+ifx: command line warning #10006: ignoring unknown option '-fsycl-default-sub-group-size=32'
+llvm-foreach: adjusted number of threads to 4 (max safe available).
+-- Performing Test EXCHCXX_C_HAS_FP_MODEL_PRECISE
+[ 17%] Building Fortran object solvent/CMakeFiles/solvent.dir/mnsol.F.o
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10006: ignoring unknown option '-fno-system-debug'
+ifx: command line warning #10006: ignoring unknown option '-fsycl-default-sub-group-size=32'
+-- Performing Test EXCHCXX_C_HAS_FP_MODEL_PRECISE - Success
+-- Performing Test EXCHCXX_CXX_HAS_FP_MODEL_PRECISE
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10006: ignoring unknown option '-fno-system-debug'
+ifx: command line warning #10006: ignoring unknown option '-fsycl-default-sub-group-size=32'
+-- Performing Test EXCHCXX_CXX_HAS_FP_MODEL_PRECISE - Success
+-- xc_kernel.cxxxc_functional.cxxboilerplate.cxxbuiltin.cxxbuiltin_interface.cxxbuiltin_kernel.cxx
+-- Performing Test CXX_HAS_FSYCL
+-- Performing Test CXX_HAS_FSYCL - Success
+-- Found SYCL: 1
+-- Performing Test EXCHCXX_SYCL_ID_QUERIES_FIT_IN_INT
+-- Performing Test EXCHCXX_SYCL_ID_QUERIES_FIT_IN_INT - Success
+-- Performing Test EXCHCXX_SYCL_DEVICE_CODE_SPLIT_PER_KERNEL
+-- Performing Test EXCHCXX_SYCL_DEVICE_CODE_SPLIT_PER_KERNEL - Success
+-- Performing Test EXCHCXX_HAVE_SYCL_TARGET_FRONTEND_FP_MODEL_PRECISE
+-- Performing Test EXCHCXX_HAVE_SYCL_TARGET_FRONTEND_FP_MODEL_PRECISE - Success
+-- Performing Test EXCHCXX_SYCL_LINK_HUGE_DEVICE_CODE
+[ 17%] Built target onemkl_helper
+[ 17%] Building CXX object pbc/CMakeFiles/pbc.dir/pbc_driver.cu.o
+[ 18%] Building CXX object pbc/CMakeFiles/pbc.dir/ft_ao.cu.o
+-- Performing Test EXCHCXX_SYCL_LINK_HUGE_DEVICE_CODE - Success
+-- Performing Test EXCHCXX_SYCL_MAX_PARALLEL_LINK_JOBS
+-- Performing Test EXCHCXX_SYCL_MAX_PARALLEL_LINK_JOBS - Success
+-- Performing Test EXCHCXX_CXX_HAS_WALL
+-- Performing Test EXCHCXX_CXX_HAS_WALL - Success
+-- Performing Test EXCHCXX_CXX_HAS_WEXTRA
+-- Performing Test EXCHCXX_CXX_HAS_WEXTRA - Success
+-- Performing Test EXCHCXX_CXX_HAS_WPEDANTIC
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10157: ignoring option '-W'; argument is of wrong type
+ifx: command line warning #10006: ignoring unknown option '-fno-system-debug'
+ifx: command line warning #10006: ignoring unknown option '-fsycl-default-sub-group-size=32'
+[ 19%] Building CXX object solvent/CMakeFiles/solvent.dir/pcm.cu.o
+-- Performing Test EXCHCXX_CXX_HAS_WPEDANTIC - Success
+-- Performing Test EXCHCXX_CXX_HAS_WNON_VIRTUAL_DTOR
+-- Performing Test EXCHCXX_CXX_HAS_WNON_VIRTUAL_DTOR - Success
+-- Performing Test EXCHCXX_CXX_HAS_WSHADOW
+-- Performing Test EXCHCXX_CXX_HAS_WSHADOW - Success
+-- Configuring done (6.7s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/runner/work/gpu4pyscf/gpu4pyscf/build/temp.linux-x86_64/gpu4pyscf/deps/src/ExchCXX-build
+[ 20%] Performing build step for 'ExchCXX'
+[ 11%] Building CXX object src/CMakeFiles/exchcxx.dir/xc_kernel.cxx.o
+[ 22%] Building CXX object src/CMakeFiles/exchcxx.dir/xc_functional.cxx.o
+[ 21%] Building CXX object gvhf-rys/CMakeFiles/gvhf_rys.dir/rys_roots_dat.cu.o
+[ 21%] Building CXX object gvhf-rys/CMakeFiles/gvhf_rys.dir/nr_sr_estimator.c.o
+[ 22%] Building CXX object cupy_helper/CMakeFiles/cupy_helper.dir/block_diag.cu.o
+[ 23%] Building CXX object gint/CMakeFiles/gint.dir/nr_fill_ao_int3c1e.cu.o
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/sem/ss_kernel.cu:21:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl/cuda_runtime.h:5:
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl/sycl_device.hpp:118:9: warning: 'NAN' macro redefined [-Wmacro-redefined]
+  118 | #define NAN std::numeric_limits<float>::quiet_NaN()
+      |         ^
+/usr/include/math.h:98:11: note: previous definition is here
+   98 | #  define NAN (__builtin_nanf (""))
+      |           ^
+1 warning generated.
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/sem/ss_kernel.cu:21:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl/cuda_runtime.h:5:
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl/sycl_device.hpp:118:9: warning: 'NAN' macro redefined [-Wmacro-redefined]
+  118 | #define NAN std::numeric_limits<float>::quiet_NaN()
+      |         ^
+/usr/include/math.h:98:11: note: previous definition is here
+   98 | #  define NAN (__builtin_nanf (""))
+      |           ^
+1 warning generated.
+[ 24%] Building CXX object sem/CMakeFiles/sem.dir/fock.cu.o
+[ 25%] Building CXX object pbc/CMakeFiles/pbc.dir/ft_ao_ip1.cu.o
+[ 26%] Building CXX object gvhf-md/CMakeFiles/gvhf_md.dir/unrolled_md_j.cu.o
+[ 27%] Linking CXX shared library /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/libsolvent.so
+llvm-foreach: adjusted number of threads to 4 (max safe available).
+/home/runner/micromamba/envs/sycl-ci/bin/icpx -fPIC -O3 -DNDEBUG -shared -fsycl -flink-huge-device-code -fsycl-device-code-split=per_kernel -fsycl-max-parallel-link-jobs=64 -Wl,--dependency-file=CMakeFiles/solvent.dir/link.d -Wl,-soname,libsolvent.so -o /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/libsolvent.so CMakeFiles/solvent.dir/mnsol_interface.f90.o CMakeFiles/solvent.dir/mnsol_mem.F.o CMakeFiles/solvent.dir/mnsol.F.o CMakeFiles/solvent.dir/pcm.cu.o   -L/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/deps/lib  -L/usr/lib/gcc/x86_64-linux-gnu/13  -Wl,-rpath,"\$ORIGIN:\$ORIGIN/deps/lib:\$ORIGIN/deps/lib64" /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/libgsycl.so -lifport -lifcoremt -lipgo -lpthread
+[ 27%] Built target solvent
+[ 28%] Building CXX object gvhf-md/CMakeFiles/gvhf_md.dir/unrolled_md_j_4dm.cu.o
+[ 33%] Building CXX object src/CMakeFiles/exchcxx.dir/boilerplate.cxx.o
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gvhf-rys/nr_sr_estimator.c:5:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gvhf-rys/vhf.cuh:6:
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl/sycl_device.hpp:118:9: warning: 'NAN' macro redefined [-Wmacro-redefined]
+  118 | #define NAN std::numeric_limits<float>::quiet_NaN()
+      |         ^
+/usr/include/math.h:98:11: note: previous definition is here
+   98 | #  define NAN (__builtin_nanf (""))
+      |           ^
+1 warning generated.
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gvhf-rys/nr_sr_estimator.c:5:
+In file included from /home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gvhf-rys/vhf.cuh:6:
+/home/runner/work/gpu4pyscf/gpu4pyscf/gpu4pyscf/lib/gsycl/sycl_device.hpp:118:9: warning: 'NAN' macro redefined [-Wmacro-redefined]
+  118 | #define NAN std::numeric_limits<float>::quiet_NaN()
+      |         ^
+/usr/include/math.h:98:11: note: previous definition is here
+   98 | #  define NAN (__builtin_nanf (""))
+      |           ^
+1 warning generated.
+[ 29%] Building CXX object gvhf-rys/CMakeFiles/gvhf_rys.dir/nr_sr_estimator.cu.o
+[ 30%] Building CXX object cupy_helper/CMakeFiles/cupy_helper.dir/unpack.cu.o
