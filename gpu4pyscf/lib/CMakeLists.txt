@@ -74,6 +74,30 @@ if(USE_HIP)
       "or set CMAKE_HIP_ARCHITECTURES.")
   endif()
   enable_language(HIP)
+
+  # Minimum supported ROCm release: 7.2.0 (LLVM 22 based amdclang++).
+  #  * ROCm 6.x hides the warp-sync builtins (__activemask, __shfl_*_sync, ...)
+  #    behind HIP_ENABLE_WARP_SYNC_BUILTINS, so the sources do not compile.
+  #  * ROCm 7.0.x / 7.1.x (LLVM 20) miscompile several RYS kernels at -O2 on
+  #    gfx90a (wrong, run-to-run varying results), which would require tagging
+  #    them optnone; the 7.2.0 compiler does not need that workaround.
+  # The version is read from <rocm root>/.info/version. If that file is
+  # missing, only a warning is printed so unusual ROCm layouts still build.
+  set(_rocm_min_version "7.2.0")
+  set(_rocm_ver_file "${CMAKE_HIP_COMPILER_ROCM_ROOT}/.info/version")
+  if(EXISTS "${_rocm_ver_file}")
+    file(STRINGS "${_rocm_ver_file}" _rocm_ver_line LIMIT_COUNT 1)
+    string(REGEX MATCH "^[0-9]+\\.[0-9]+(\\.[0-9]+)?" _rocm_ver "${_rocm_ver_line}")
+    if(_rocm_ver AND _rocm_ver VERSION_LESS _rocm_min_version)
+      message(FATAL_ERROR
+        "gpu4pyscf HIP backend requires ROCm >= ${_rocm_min_version} "
+        "(found ${_rocm_ver} at ${CMAKE_HIP_COMPILER_ROCM_ROOT}).")
+    endif()
+    message("ROCm version: ${_rocm_ver}")
+  else()
+    message(WARNING "Cannot determine the ROCm version (no ${_rocm_ver_file}); "
+                    "gpu4pyscf requires ROCm >= ${_rocm_min_version}.")
+  endif()
 endif()
 
 set(CMAKE_C_STANDARD "99")
@@ -433,17 +457,13 @@ endif()
 
 # ExchCXX / libxc configuration — mutually exclusive.
 # Defaults are backend-aware so a SYCL configure never starts with
-# BUILD_LIBXC=ON (libxc is CUDA-only; SYCL uses ExchCXX).
+# BUILD_LIBXC=ON (libxc is for CUDA and HIP; SYCL uses ExchCXX).
 if(USE_SYCL)
   option(BUILD_EXCHCXX "Build ExchCXX for SYCL backend (XC functionals)" ON)
   option(BUILD_LIBXC "Build libxc for CUDA backend (XC functionals)" OFF)
 else()
   option(BUILD_EXCHCXX "Build ExchCXX for SYCL backend (XC functionals)" OFF)
-  if(USE_HIP)
-    option(BUILD_LIBXC "Using libxc for DFT" OFF)
-  else()
-    option(BUILD_LIBXC "Using libxc for DFT" ON)
-  endif()
+  option(BUILD_LIBXC "Using libxc for DFT" ON)
 endif()
 
 # Enforce correct combination based on backend. FORCE is the safety net for
@@ -514,21 +534,39 @@ if(BUILD_EXCHCXX)
   add_dependencies(ExchCXX::ExchCXX ExchCXX)
 endif()
 
-# libxc setup (CUDA only) — runs at end like upstream
+# libxc setup (CUDA and HIP; SYCL uses ExchCXX). The bundled libxc 7.1.2
+# builds with ENABLE_CUDA on CUDA and ENABLE_HIP on HIP, where libxc's own
+# CMake compiles the XC work functions as HIP device code so they run on the
+# GPU when called with device pointers.
 if(BUILD_LIBXC)
   include(ExternalProject)
+  if(USE_HIP)
+    # amdclang++ must compile the HIP TUs; point the HIP language at it.
+    set(_libxc_hip_cxx ${CMAKE_HIP_COMPILER})
+    if(NOT _libxc_hip_cxx)
+      set(_libxc_hip_cxx ${CMAKE_CXX_COMPILER})
+    endif()
+    set(_libxc_gpu_args
+      -DENABLE_HIP=ON
+      -DCMAKE_CXX_COMPILER=${_libxc_hip_cxx}
+      -DCMAKE_HIP_COMPILER=${_libxc_hip_cxx}
+      -DCMAKE_HIP_ARCHITECTURES:STRING=${CMAKE_HIP_ARCHITECTURES})
+  else()
+    set(_libxc_gpu_args -DENABLE_CUDA=ON)
+  endif()
   ExternalProject_Add(libxc
     URL https://gitlab.com/libxc/libxc/-/archive/7.1.2/libxc-7.1.2.tar.gz
     PATCH_COMMAND patch -p1 --batch --forward -i ${PROJECT_SOURCE_DIR}/libxc_prune.patch
     PREFIX ${PROJECT_BINARY_DIR}/deps
     INSTALL_DIR ${PROJECT_SOURCE_DIR}/deps
-    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON -DENABLE_CUDA=ON
+    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON
             -DBUILD_TESTING=OFF -DENABLE_FORTRAN=OFF
             -DMAXORDER=3 -DDISABLE_FHC=ON
             -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
             -DCMAKE_INSTALL_LIBDIR:PATH=lib
             -DCMAKE_C_CREATE_SHARED_LIBRARY=${C_LINK_TEMPLATE}
             -DENABLE_XHOST:STRING=${BUILD_MARCH_NATIVE}
+            ${_libxc_gpu_args}
     CMAKE_CACHE_ARGS -DCMAKE_CUDA_ARCHITECTURES:STRING=${CMAKE_CUDA_ARCHITECTURES}
   )
 endif()

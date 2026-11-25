@@ -249,8 +249,16 @@ class KnownValues(unittest.TestCase):
         ref = 0
         for i, jfac in enumerate(j_factor):
             ref += rhf_grad._jk_energy_per_atom(opt, dm[i], j_factor=jfac, k_factor=0)
-        assert abs(ej - ref).max() < 1e-12
-        assert abs(lib.fp(ej) - -5.7379651745047555) < 2e-12
+        # The int3c2e contraction accumulates float64 values with atomicAdd, so
+        # the last bits vary from run to run (about 2 ulp), and the auxiliary
+        # metric is ill-conditioned (cond ~ 3e7), which amplifies that rounding.
+        # On ROCm over 8 runs |ej - ref| is 0.9e-12..1.2e-12 and the fingerprint
+        # error 2.3e-12..2.5e-12 (ej ~ 20, about 1e-13 relative); the value
+        # recorded on CUDA is one such sample, so these limits are slightly
+        # looser on HIP. No race or missing synchronization was found.
+        tol_ref, tol_fp = (3e-12, 5e-12) if cp.cuda.runtime.is_hip else (1e-12, 2e-12)
+        assert abs(ej - ref).max() < tol_ref
+        assert abs(lib.fp(ej) - -5.7379651745047555) < tol_fp
 
     def test_jk_energy_per_atom(self):
         # Backend-independent input: np.random (MT19937) is identical on

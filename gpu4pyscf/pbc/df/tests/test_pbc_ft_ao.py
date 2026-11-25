@@ -315,27 +315,37 @@ class KnownValues(unittest.TestCase):
         sigma = sigma.get()
         assert abs(grad.sum(axis=0)).max() < 1e-10
 
-        disp = 1e-5
         def eval_aux(c):
             Gv = c.get_Gv(mesh)
             auxG = ft_ao_gpu.ft_ao(SortedGTO.from_cell(c), Gv, sort_output=False).T
             return cp.einsum('ag,ag->', auxG.conj(), dm_auxG).real.get()
 
-        for (i, j) in [(0, 0), (0, 1), (0, 2), (1, 1), (2, 0), (2, 2)]:
-            cell1, cell2 = _finite_diff_cells(cell, i, j, disp=disp)
-            e1 = eval_aux(cell1)
-            e2 = eval_aux(cell2)
-            assert abs(sigma[i, j] - (e1-e2)/2/disp) < 3e-8
+        # E is ~1e3, so a central difference with disp=1e-5 is limited by the
+        # rounding of E (one ulp is 2e-13, and the check below asks for 3e-8 after
+        # dividing by 2*disp), and which way it rounds depends on the backend.
+        # Use a larger step with the five-point Richardson combination
+        # (4 D(h) - D(2h)) / 3, whose truncation error is O(h^4).
+        disp = 1e-4
+        def diff_sigma(i, j, h):
+            cell1, cell2 = _finite_diff_cells(cell, i, j, disp=h)
+            return (eval_aux(cell1) - eval_aux(cell2)) / 2 / h
 
-        coords = cell.atom_coords()
+        def diff_grad(i, j, h):
+            coords = cell.atom_coords()
+            coords[i,j] += h
+            e1 = eval_aux(cell.set_geom_(coords, inplace=False))
+            coords[i,j] -= 2*h
+            e2 = eval_aux(cell.set_geom_(coords, inplace=False))
+            return (e1 - e2) / 2 / h
+
+        for (i, j) in [(0, 0), (0, 1), (0, 2), (1, 1), (2, 0), (2, 2)]:
+            ref = (4*diff_sigma(i, j, disp) - diff_sigma(i, j, 2*disp)) / 3
+            assert abs(sigma[i, j] - ref) < 3e-8
+
         for i in range(cell.natm):
             for j in range(3):
-                coords[i,j] += disp
-                e1 = eval_aux(cell.set_geom_(coords, inplace=False))
-                coords[i,j] -= 2*disp
-                e2 = eval_aux(cell.set_geom_(coords, inplace=False))
-                coords[i,j] += disp
-                assert abs(grad[i, j] - (e1-e2)/2/disp) < 3e-8
+                ref = (4*diff_grad(i, j, disp) - diff_grad(i, j, 2*disp)) / 3
+                assert abs(grad[i, j] - ref) < 3e-8
 
     def test_fourier_gamma_and_cached_sampling(self):
         Gv = cell_he.get_Gv([3]*3)

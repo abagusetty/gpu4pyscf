@@ -182,8 +182,14 @@ int ECP_ip_cart(double *gctr,
             const int lij1 = (li+1)+lj+1;
             const int nfi = (li+2)*(li+3)/2;
             const int nfj = (lj+1)*(lj+2)/2;
-            const int lic1 = li1+lc+1;
-            const int ljc1 = lj1+lc+1;
+            // type2_cart_ip1_general evaluates type2_cart_kernel with angular
+            // momentum li+1 on the bra, which lays out its dynamic shared
+            // memory with (li+1)+lc+1 and lj+lc+1 radial/angular points, i.e.
+            // li1+lc and lj1+lc here. One more point per index over-reserves
+            // shared memory and, for high angular momentum, pushes the launch
+            // over the per-block limit (64 KiB on AMD CDNA GPUs).
+            const int lic1 = li1+lc;
+            const int ljc1 = lj1+lc;
             const int lcc1 = 2*lc+1;
             const int blki = (lic1+1)/2 * lcc1;
             const int blkj = (ljc1+1)/2 * lcc1;
@@ -269,11 +275,28 @@ int ECP_ipipv_cart(double *gctr,
         //int static_smem_size = NF2_MAX*NF0_MAX;
         int dynamic_smem_size = smem_size0 + smem_size1 + smem_size2 + smem_size3 + smem_size4;
         dynamic_smem_size = max(dynamic_smem_size, 3*NF1_MAX*NF0_MAX);
+        // Compact layout (omega_per_m = 1): omegai/omegaj hold one angular
+        // component m at a time, see type2_cart_kernel. Only used when the
+        // full layout does not fit in the shared memory of the device
+        // (e.g. 64 KiB LDS on AMD GPUs for li=4, lc=4).
+        int compact_smem_size = smem_size0 + smem_size1/lcc1 + smem_size2/lcc1 + smem_size3 + smem_size4;
+        compact_smem_size = max(compact_smem_size, 3*NF1_MAX*NF0_MAX);
+        int omega_per_m = 0;
         //int total_smem_size = static_smem_size + dynamic_smem_size;
 
         cudaError_t err = cudaFuncSetAttribute(type2_cart_ipipv,
                                          cudaFuncAttributeMaxDynamicSharedMemorySize,
                                          dynamic_smem_size*sizeof(double));
+        if (err != cudaSuccess) {
+            // Full layout exceeds the shared memory limit. Clear the error
+            // and fall back to the compact omega layout.
+            cudaGetLastError();
+            omega_per_m = 1;
+            dynamic_smem_size = compact_smem_size;
+            err = cudaFuncSetAttribute(type2_cart_ipipv,
+                                       cudaFuncAttributeMaxDynamicSharedMemorySize,
+                                       dynamic_smem_size*sizeof(double));
+        }
         if (err != cudaSuccess) {
             fprintf(stderr, "CUDA Error in cudaFuncSetAttribute %s (li,lj,lc = %d,%d,%d): %s\n", __func__, li,lj,lc, cudaGetErrorString(err));
             return 1;
@@ -284,7 +307,7 @@ int ECP_ipipv_cart(double *gctr,
             ao_loc, nao,
             tasks, ntasks,
             ecpbas, ecploc,
-            atm, bas, env);
+            atm, bas, env, omega_per_m);
 
     }
     cudaError_t err = cudaGetLastError();
@@ -341,12 +364,29 @@ int ECP_ipvip_cart(double *gctr,
         //int static_smem_size = NF1_MAX*NF1_MAX;
         int dynamic_smem_size = smem_size0 + smem_size1 + smem_size2 + smem_size3 + smem_size4;
         dynamic_smem_size = max(dynamic_smem_size, 3*NF0_MAX*NF1_MAX);
+        // Compact layout (omega_per_m = 1): omegai/omegaj hold one angular
+        // component m at a time, see type2_cart_kernel. Only used when the
+        // full layout does not fit in the shared memory of the device
+        // (e.g. 64 KiB LDS on AMD GPUs for li=4, lc=4).
+        int compact_smem_size = smem_size0 + smem_size1/lcc1 + smem_size2/lcc1 + smem_size3 + smem_size4;
+        compact_smem_size = max(compact_smem_size, 3*NF0_MAX*NF1_MAX);
+        int omega_per_m = 0;
 
         //int total_smem_size = static_smem_size + dynamic_smem_size;
         cudaError_t err = cudaFuncSetAttribute(
             type2_cart_ipvip,
             cudaFuncAttributeMaxDynamicSharedMemorySize,
             dynamic_smem_size*sizeof(double));
+        if (err != cudaSuccess) {
+            // Full layout exceeds the shared memory limit. Clear the error
+            // and fall back to the compact omega layout.
+            cudaGetLastError();
+            omega_per_m = 1;
+            dynamic_smem_size = compact_smem_size;
+            err = cudaFuncSetAttribute(type2_cart_ipvip,
+                                       cudaFuncAttributeMaxDynamicSharedMemorySize,
+                                       dynamic_smem_size*sizeof(double));
+        }
         if (err != cudaSuccess) {
             fprintf(stderr, "CUDA Error in cudaFuncSetAttribute %s (li,lj,lc = %d,%d,%d): %s\n", __func__, li,lj,lc, cudaGetErrorString(err));
             return 1;
@@ -357,7 +397,7 @@ int ECP_ipvip_cart(double *gctr,
             ao_loc, nao,
             tasks, ntasks,
             ecpbas, ecploc,
-            atm, bas, env);
+            atm, bas, env, omega_per_m);
     }
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {

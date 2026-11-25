@@ -115,6 +115,60 @@ void type2_facs_omega(double* __restrict__ omega, const int LI, const int LC, do
     __syncthreads();
 }
 
+// Same as type2_facs_omega(omega, LI, LC, r), but only the angular component
+// m (0 <= m < 2*LC+1) is stored. Layout: omega[(ioff+joff+k)*BLK + lambda/2]
+// with BLK = (LI+LC+2)/2, i.e. the (2*LC+1) stride of the full table is
+// dropped. Used to reduce shared memory for high angular momentum kernels.
+// Values are bit-identical to the corresponding entries of the full table.
+__device__
+void type2_facs_omega_m(double* __restrict__ omega, const int LI, const int LC, double *r, const int m){
+    setup_context();
+    double unitr[3];
+    if (r[0]*r[0] + r[1]*r[1] + r[2]*r[2] < 1e-16){
+        unitr[0] = 0;
+        unitr[1] = 0;
+        unitr[2] = 0;
+    } else {
+        double norm_r = -rnorm3d(r[0], r[1], r[2]);
+        unitr[0] = r[0] * norm_r;
+        unitr[1] = r[1] * norm_r;
+        unitr[2] = r[2] * norm_r;
+    }
+
+    double tmp[2*ECP_LMAX+1];
+    const int blk = (LI+LC+2)/2;
+    for (int n = threadIdx_x; n < (LI+1)*(LI+1)*(LI+1); n+=blockDim_x){
+        const int i = n/(LI+1)/(LI+1);
+        const int j = n/(LI+1)%(LI+1);
+        const int k = n%(LI+1);
+        if (i+j+k > LI){
+            continue;
+        }
+
+        const int LI_i = LI-i;
+        const int ioff = (LI_i)*(LI_i+1)*(LI_i+2)/6;
+        const int joff = (LI_i-j)*(LI_i-j+1)/2;
+        double *pomega = omega + (ioff+joff+k)*blk;
+
+        // LC + (i+j+k) + lambda needs to be even
+        if ((i+j+k+LC)%2 == 0){
+            if (LI+LC >= 0)  {type2_ang_nuc_l<0>(tmp, LC, i, j, k, unitr);  pomega[0] = tmp[m];}
+            if (LI+LC >= 2)  {type2_ang_nuc_l<2>(tmp, LC, i, j, k, unitr);  pomega[1] = tmp[m];}
+            if (LI+LC >= 4)  {type2_ang_nuc_l<4>(tmp, LC, i, j, k, unitr);  pomega[2] = tmp[m];}
+            if (LI+LC >= 6)  {type2_ang_nuc_l<6>(tmp, LC, i, j, k, unitr);  pomega[3] = tmp[m];}
+            if (LI+LC >= 8)  {type2_ang_nuc_l<8>(tmp, LC, i, j, k, unitr);  pomega[4] = tmp[m];}
+            if (LI+LC >= 10) {type2_ang_nuc_l<10>(tmp, LC, i, j, k, unitr); pomega[5] = tmp[m];}
+        } else {
+            if (LI+LC >= 1)  {type2_ang_nuc_l<1>(tmp, LC, i, j, k, unitr);  pomega[0] = tmp[m];}
+            if (LI+LC >= 3)  {type2_ang_nuc_l<3>(tmp, LC, i, j, k, unitr);  pomega[1] = tmp[m];}
+            if (LI+LC >= 5)  {type2_ang_nuc_l<5>(tmp, LC, i, j, k, unitr);  pomega[2] = tmp[m];}
+            if (LI+LC >= 7)  {type2_ang_nuc_l<7>(tmp, LC, i, j, k, unitr);  pomega[3] = tmp[m];}
+            if (LI+LC >= 9)  {type2_ang_nuc_l<9>(tmp, LC, i, j, k, unitr);  pomega[4] = tmp[m];}
+        }
+    }
+    __syncthreads();
+}
+
 template <int LI, int LC> __device__
 void type2_facs_omega(double* __restrict__ omega, double *r){
     setup_context();
@@ -180,11 +234,13 @@ void type2_facs_omega(double* __restrict__ omega, double *r){
 
 
 __device__
-void type2_ang(double * __restrict__ facs, const int LI, const int LC, double *rca, double *omega){
+void type2_ang(double * __restrict__ facs, const int LI, const int LC, double *rca, double *omega,
+               const int omega_per_m = 0){
     setup_context();
     const int LI1 = LI+1;
     const int nfi = LI1*(LI1+1)/2;
-    const int LCC1 = (2*LC+1);
+    // omega_per_m: omega holds a single angular component (type2_facs_omega_m)
+    const int LCC1 = omega_per_m ? 1 : (2*LC+1);
     const int LIC1 = LI+LC+1;
     const int BLK = (LIC1+1)/2 * LCC1;
 

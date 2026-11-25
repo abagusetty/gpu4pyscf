@@ -43,14 +43,24 @@ if BACKEND != 'hip':
     __version__ = _libxc_version + ' (CUDA)'
 
 else:
-    # ROCm/HIP builds do not include the CUDA libXC fork. Keep libXC optional
-    # there so XC is evaluated on CPU via PySCF's libXC (see below); a missing
-    # libXC remains a hard error on CUDA.
-    import warnings
-    warnings.warn(
-        "GPU libXC is not available on ROCm/HIP; XC functionals are "
-        "evaluated on CPU via PySCF's libXC."
-    )
+    # On ROCm/HIP libXC is optional: use the bundled libxc built with ENABLE_HIP
+    # (setup.py passes BUILD_LIBXC=ON) when it is present, otherwise XC is
+    # evaluated on CPU via PySCF's libXC (see below). A missing libXC remains a
+    # hard error on CUDA.
+    try:
+        _libxc = load_library('libxc', path='gpu4pyscf/lib/deps/lib')
+    except OSError:
+        _libxc = None
+    if _libxc is not None:
+        _libxc.xc_version_string.restype = ctypes.c_char_p
+        _libxc_version = _libxc.xc_version_string().decode()
+        __version__ = _libxc_version + ' (HIP)'
+    else:
+        import warnings
+        warnings.warn(
+            "GPU libXC is not available on ROCm/HIP; XC functionals are "
+            "evaluated on CPU via PySCF's libXC."
+        )
 
 libgdft = load_library('libgdft')
 libgdft.GDFT_xc_lda.argtypes = (

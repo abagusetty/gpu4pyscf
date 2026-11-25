@@ -97,9 +97,12 @@ kernels are compiled for each GPU's native wavefront automatically — 32-wide o
 RDNA (Radeon) and 64-wide on CDNA (Instinct) — so the same source produces a
 correct binary for one GPU, or a single "fat" binary for many.
 
-Prerequisites: a working [ROCm](https://rocm.docs.amd.com) install (with
-`hipconfig`/`amdclang++` on `PATH`, or `ROCM_PATH` set) and a ROCm build of
-[CuPy](https://docs.cupy.dev/en/stable/install.html#using-cupy-on-amd-gpu-experimental).
+Prerequisites: a working [ROCm](https://rocm.docs.amd.com) install of **version 7.2.0
+or newer** (older releases are rejected at configure time; tested with 7.2.0 on
+gfx90a), with `hipconfig`/`amdclang++` on `PATH` (or `ROCM_PATH` set), and a ROCm
+build of
+[CuPy](https://docs.cupy.dev/en/stable/install.html#using-cupy-on-amd-gpu-experimental)
+(validated with `cupy-rocm-7-0==14.2.0` on ROCm 7.2.0).
 
 Build and install:
 ```sh

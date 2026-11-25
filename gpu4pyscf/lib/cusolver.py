@@ -275,6 +275,14 @@ def syevd(a, overwrite=False):
     assert a.ndim == 2 and a.shape[0] == a.shape[1]
     assert a.dtype in (np.float64, np.complex128)
     n = a.shape[0]
+    if a.dtype == np.complex128 and not a.imag.any():
+        # hipSOLVER/rocSOLVER (ROCm 7.2) Zheevd returns NaN eigenvectors with
+        # devInfo=0 for a complex Hermitian matrix whose imaginary part is
+        # exactly zero once n exceeds ~64 (e.g. the Gamma-point k-matrices of
+        # periodic X2C). Such a matrix is real symmetric: solve it with the real
+        # syevd instead.
+        w, v = syevd(a.real)
+        return w, v.astype(a.dtype)
     if a.dtype == np.complex128:
         # heevd expects F-order. For a hermitian matrix, the C-ordered conjugate
         # is the F-ordered representation (same as the sygvd path). Writing it
@@ -312,6 +320,10 @@ def syevd(a, overwrite=False):
                 n, A.data.ptr, n, w.data.ptr, work.data.ptr, lwork, devInfo.data.ptr)
     if status != 0:
         raise LinAlgError("failed in syevd kernel")
+    if int(devInfo.get()[0]) != 0 or cupy.isnan(A).any():
+        # Do not return silently corrupted eigenvectors; fall back to cupy's
+        # Jacobi solver (syevj), which is slower but robust.
+        return cupy.linalg.eigh(a)
     return w, A.T
 
 def eigh_std(a):

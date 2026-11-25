@@ -23,6 +23,7 @@ from packaging.version import Version
 from pyscf import lib
 from pyscf.pbc.df import df as df_cpu
 from pyscf.pbc.x2c import sfx2c1e as sfx2c1e_cpu
+from gpu4pyscf import BACKEND
 from gpu4pyscf.pbc.df.df import GDF
 from gpu4pyscf.gto.mole import SortedGTO
 from gpu4pyscf.pbc.x2c import x2c1e
@@ -110,8 +111,14 @@ class KnownValues(unittest.TestCase):
             self.assertAlmostEqual(mf.e_tot, ref, 8)
 
             # The multigrid integrator does not support conversion to CPU.
-            with self.assertRaises(TypeError):
-                mf.to_cpu()
+            # On HIP, MultiGridNumInt.to_cpu returns a CPU NumInt (needed by
+            # the CPU-libxc fallback) and the FFTDF route has no multigrid
+            # integrator, so the conversion succeeds there.
+            if BACKEND == 'hip':
+                self.assertIsInstance(mf.to_cpu(), sfx2c1e_cpu.SFX2C1E_SCF)
+            else:
+                with self.assertRaises(TypeError):
+                    mf.to_cpu()
 
             mf = cell.KRHF(kpts=cell.make_kpts([3,1,1])).sfx2c1e()
             mf.conv_tol = 1e-11

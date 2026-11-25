@@ -21,7 +21,8 @@ void type2_cart_ipipv(double *gctr,
                 const int *ao_loc, const int nao,
                 const int *tasks, const int ntasks,
                 const int *ecpbas, const int *ecploc,
-                const int *atm, const int *bas, const double *env)
+                const int *atm, const int *bas, const double *env,
+                const int omega_per_m)
 {
     setup_context();
     const int task_id = blockIdx_x;
@@ -45,7 +46,7 @@ void type2_cart_ipipv(double *gctr,
         buf1, LI+2, LJ, LC,
         ish, jsh, ksh,
         ecpbas, ecploc,
-        atm, bas, env);
+        atm, bas, env, omega_per_m);
 
     constexpr int nfi1_max = (AO_LMAX+2)*(AO_LMAX+3)/2;
     DYNAMIC_SHARED_PTR(double, smem);
@@ -60,7 +61,7 @@ void type2_cart_ipipv(double *gctr,
         buf1, LI, LJ, LC,
         ish, jsh, ksh,
         ecpbas, ecploc,
-        atm, bas, env);
+        atm, bas, env, omega_per_m);
     set_shared_memory(buf, 3*nfi1_max*nfj_max);
     _li_up(buf, buf1, LI+1, LJ);
     __syncthreads();
@@ -78,7 +79,7 @@ void type2_cart_ipipv(double *gctr,
                 buf1, LI-2, LJ, LC,
                 ish, jsh, ksh,
                 ecpbas, ecploc,
-                atm, bas, env);
+                atm, bas, env, omega_per_m);
             set_shared_memory(buf, 3*nfi1_max*nfj_max);
             _li_up(buf, buf1, LI-1, LJ);
             __syncthreads();
@@ -94,7 +95,8 @@ void type2_cart_ipvip(double *gctr,
                 const int *ao_loc, const int nao,
                 const int *tasks, const int ntasks,
                 const int *ecpbas, const int *ecploc,
-                const int *atm, const int *bas, const double *env)
+                const int *atm, const int *bas, const double *env,
+                const int omega_per_m)
 {
     setup_context();
     const int task_id = blockIdx_x;
@@ -118,7 +120,7 @@ void type2_cart_ipvip(double *gctr,
         buf1, LI+1, LJ+1, LC,
         ish, jsh, ksh,
         ecpbas, ecploc,
-        atm, bas, env);
+        atm, bas, env, omega_per_m);
 
     constexpr int nfi_max = (AO_LMAX+1)*(AO_LMAX+2)/2;
     DYNAMIC_SHARED_PTR(double, smem);
@@ -133,7 +135,7 @@ void type2_cart_ipvip(double *gctr,
             buf1, LI-1, LJ+1, LC,
             ish, jsh, ksh,
             ecpbas, ecploc,
-            atm, bas, env);
+            atm, bas, env, omega_per_m);
         set_shared_memory(buf, 3*nfi_max*nfj1_max);
         _li_up(buf, buf1, LI, LJ+1);
         __syncthreads();
@@ -146,7 +148,7 @@ void type2_cart_ipvip(double *gctr,
             buf1, LI+1, LJ-1, LC,
             ish, jsh, ksh,
             ecpbas, ecploc,
-            atm, bas, env);
+            atm, bas, env, omega_per_m);
         set_shared_memory(buf, 3*nfi_max*nfj1_max);
         _li_down(buf, buf1, LI, LJ-1);
         __syncthreads();
@@ -157,7 +159,7 @@ void type2_cart_ipvip(double *gctr,
                 buf1, LI-1, LJ-1, LC,
                 ish, jsh, ksh,
                 ecpbas, ecploc,
-                atm, bas, env);
+                atm, bas, env, omega_per_m);
             set_shared_memory(buf, 3*nfi_max*nfj1_max);
             _li_up(buf, buf1, LI, LJ-1);
             __syncthreads();

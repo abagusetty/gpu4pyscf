@@ -530,8 +530,17 @@ class KnownValues(unittest.TestCase):
         # dm is not very stable, and numerical gradient is super fast
         ref_gradient = numerical_gradient_exc_becke(cell, "lda", kmesh, None, (40,194), dm, unrestricted=True, dx=1e-5)
 
-        assert np.max(np.abs(test_gradient[:-3] - ref_gradient[:-3])) < 1e-9
-        assert np.max(np.abs(test_gradient[-3:] - ref_gradient[-3:])) < 4e-9
+        # The gth-tzvp overlap matrix is nearly singular (smallest eigenvalue
+        # ~1e-14 per k-point), so last-bit noise from the float atomics in the
+        # multigrid nuclear/pseudopotential build changes the SCF density matrix
+        # by up to 4e-9 in directions that leave the energy unchanged (4e-14).
+        # The test holds that density fixed while moving the atoms, so the error
+        # against the finite-difference gradient varies from run to run: over 3
+        # runs 0.8e-9..2.0e-9 and 2.8e-9..3.6e-9, above the bounds recorded on
+        # CUDA. The gradient code itself is deterministic for a given density.
+        tol_atoms, tol_cell = (5e-9, 8e-9) if cp.cuda.runtime.is_hip else (1e-9, 4e-9)
+        assert np.max(np.abs(test_gradient[:-3] - ref_gradient[:-3])) < tol_atoms
+        assert np.max(np.abs(test_gradient[-3:] - ref_gradient[-3:])) < tol_cell
 
 if __name__ == '__main__':
     print("Full Tests for PBC Becke grids")

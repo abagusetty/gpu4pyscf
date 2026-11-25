@@ -24,7 +24,6 @@ import functools
 import itertools
 import numpy as np
 import cupy as cp
-from gpu4pyscf import BACKEND
 from gpu4pyscf.lib.cusolver import eigh_std
 from pyscf import lib
 from pyscf.pbc.scf import khf as khf_cpu
@@ -402,9 +401,7 @@ class KSCF(pbchf.SCF):
         # By initializing self._numint, get_j and get_hcore will use the
         # MultiGridNumInt integrator to evaluate Coulomb integrals, skipping the
         # self.with_df code path.
-        # Keep the default FFTDF route on HIP, as in get_hcore below.
-        if (isinstance(self.with_df, df.FFTDF) and self._numint is None
-                and BACKEND != 'hip'):
+        if (isinstance(self.with_df, df.FFTDF) and self._numint is None):
             from gpu4pyscf.pbc.dft import multigrid_v3
             self._numint = multigrid_v3.MultiGridNumInt(self.cell)
 
@@ -435,17 +432,10 @@ class KSCF(pbchf.SCF):
 
         if isinstance(self._numint, multigrid.MultiGridNumIntBase):
             ni = self._numint
-        elif (cell.dimension == 3 and np.prod(cell.mesh) < pbchf.ALLOWED_FFT_MESH_SIZE
-                and BACKEND != 'hip'):
+        elif (cell.dimension == 3 and np.prod(cell.mesh) < pbchf.ALLOWED_FFT_MESH_SIZE):
             # Automatic MultiGrid nuclear potentials are only available in 3D.
             # In the pseudo and all-electron mixed case, MultiGridNumInt is
             # still more efficient if Ecut is not too high.
-            # On ROCm/HIP the multigrid pseudopotential collocation kernel
-            # hard-hangs the GPU for sharp / short-range GTH pseudos (e.g. MgO's
-            # semicore Mg: HW Exception "GPU Hang", core dump), so skip this
-            # opportunistic optimization there and use FFTDF get_pp instead --
-            # hcore is built once, so the cost is negligible. The CUDA path is
-            # unchanged.
             ni = multigrid_v3.MultiGridNumInt(cell)
         else:
             ni = self.with_df

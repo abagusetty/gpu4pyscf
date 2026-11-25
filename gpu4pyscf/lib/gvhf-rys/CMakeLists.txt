@@ -77,3 +77,14 @@ endif()
 
 target_link_libraries(gvhf_rys PRIVATE OpenMP::OpenMP_C)
 gpu4pyscf_configure_gpu_target(gvhf_rys)
+
+if(USE_HIP)
+  # Compile unrolled_ejk_ip2_type3.cu at -O1 on HIP. With amdclang++ from
+  # ROCm 7.2.0 (LLVM 22), -O2 miscompiles the unrolled kernel
+  # rys_ejk_ip2_type3_0000 (the (ss|ss) group of the second-derivative J/K
+  # contraction) on gfx90a: it writes garbage (1e150..1e300 or NaN) that changes
+  # from run to run, which breaks the RHF Hessian (scf/tests/
+  # test_diffuse_orbital.py::test_rhf_hessian). At -O1 the results are correct
+  # and reproducible. The other RYS kernels are correct at -O2.
+  set_source_files_properties(unrolled_ejk_ip2_type3.cu PROPERTIES COMPILE_OPTIONS "-O1")
+endif()

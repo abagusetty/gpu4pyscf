@@ -538,11 +538,26 @@ def decompose_j3c_gpu(streamobj, j2c_decomp, j3c, log=None):
     if j3c_on_gpu:
         # directly perform decomposition
         if j2c_decomp['tag'] == 'cd':
-            j2c_l = cp.asarray(j2c_decomp['j2c_l'], dtype=dtype, order='F')
+            # On ROCm the triangular solve is done in FP64 even for FP32 j3c.
+            # cond(j2c) is easily 1e6, and rocBLAS strsm then loses ~1e-4 relative
+            # accuracy in cderi (it is ~4x less accurate than a CPU strsm), which
+            # shifts the DF-MP2 correlation energy by ~1e-7. Only the result is
+            # stored as FP32.
+            solve_dtype = np.float64 if cp.cuda.runtime.is_hip else dtype
+            j2c_l = cp.asarray(j2c_decomp['j2c_l'], dtype=solve_dtype, order='F')
             # probably memory copy occurs due to c-contiguous array?
             for iset in range(nset):
                 shape = j3c[iset].shape
-                j3c[iset] = cupyx.scipy.linalg.solve_triangular(j2c_l, j3c[iset].reshape((-1, naux)).T, lower=True, overwrite_b=True).T.reshape(shape)
+                if solve_dtype == dtype:
+                    j3c[iset] = cupyx.scipy.linalg.solve_triangular(j2c_l, j3c[iset].reshape((-1, naux)).T, lower=True, overwrite_b=True).T.reshape(shape)
+                    continue
+                j3c_2d = j3c[iset].reshape((-1, naux))
+                n_ov = j3c_2d.shape[0]
+                batch_ov = max(1, int(0.2 * get_avail_mem_with_memGetInfo() / (16 * naux)))
+                for i_ov in range(0, n_ov, batch_ov):
+                    j3c_batched = j3c_2d[i_ov : i_ov + batch_ov].astype(np.float64)
+                    j3c_2d[i_ov : i_ov + batch_ov] = cupyx.scipy.linalg.solve_triangular(j2c_l, j3c_batched.T, lower=True, overwrite_b=True).T
+                    j3c_batched = None
         elif j2c_decomp['tag'] == 'eig':
             j2c_l_inv = cp.asarray(j2c_decomp['j2c_l_inv'], dtype=dtype, order='C')
             for iset in range(nset):
@@ -556,7 +571,11 @@ def decompose_j3c_gpu(streamobj, j2c_decomp, j3c, log=None):
         log.debug(f'Available GPU memory: {gpu_mem_avail / 1024**3:.6f} GB')
         fp_avail = 0.7 * gpu_mem_avail / min(j3c[0].strides)
         if j2c_decomp['tag'] == 'cd':
-            j2c_l = cp.asarray(j2c_decomp['j2c_l'], dtype=dtype, order='F')
+            # FP64 triangular solve on ROCm also for FP32 j3c (see the j3c_on_gpu branch)
+            solve_dtype = np.float64 if cp.cuda.runtime.is_hip else dtype
+            if solve_dtype != dtype:
+                fp_avail = 0.7 * gpu_mem_avail / 8
+            j2c_l = cp.asarray(j2c_decomp['j2c_l'], dtype=solve_dtype, order='F')
             for iset in range(nset):
                 shape = j3c[iset].shape
                 j3c[iset].shape = (-1, naux)
@@ -566,8 +585,10 @@ def decompose_j3c_gpu(streamobj, j2c_decomp, j3c, log=None):
                 for i_ov in range(0, n_ov, batch_ov):
                     log.debug(f'load non-auxiliary index: {i_ov}/{n_ov}')
                     nbatch_ov = min(batch_ov, n_ov - i_ov)
-                    j3c_batched = cp.asarray(j3c[iset][i_ov : i_ov + nbatch_ov])
+                    j3c_batched = cp.asarray(j3c[iset][i_ov : i_ov + nbatch_ov], dtype=solve_dtype)
                     j3c_batched = cupyx.scipy.linalg.solve_triangular(j2c_l, j3c_batched.T, lower=True, overwrite_b=True).T
+                    if solve_dtype != dtype:
+                        j3c_batched = j3c_batched.astype(dtype)
                     j3c_batched.get(out=j3c[iset][i_ov : i_ov + nbatch_ov], blocking=False)
                     j3c_batched = None
                 j3c[iset].shape = shape

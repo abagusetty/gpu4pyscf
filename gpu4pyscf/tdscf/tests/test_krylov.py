@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import unittest
+import numpy as np
 import cupy as cp
 from gpu4pyscf.tdscf._krylov_tools import krylov_solver 
 
@@ -20,23 +21,26 @@ from gpu4pyscf.tdscf._krylov_tools import krylov_solver
 class KnownValues(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        # Set random seed for reproducibility
-        cp.random.seed(42)
+        # Set random seed for reproducibility. The inputs come from np.random
+        # (MT19937, identical on every host), not cp.random: cuRAND and hipRAND
+        # generate different streams, and the solver needs a different number of
+        # iterations (35 vs 43 for conv_tol=1e-8) on the matrices they produce.
+        np.random.seed(42)
         self.A_size = 3000
         self.n_vec = 5
         self.n_states = 3
         self.scaling = 4
 
         # Generate symmetric matrix A
-        A = cp.random.rand(self.A_size, self.A_size) * 0.01
+        A = cp.asarray(np.random.rand(self.A_size, self.A_size) * 0.01)
         A = A + A.T
-        cp.fill_diagonal(A, (cp.random.rand(self.A_size) + 2) * self.scaling)
+        cp.fill_diagonal(A, cp.asarray(np.random.rand(self.A_size) + 2) * self.scaling)
         self.A = A
         self.hdiag = cp.diag(A)
 
         # Generate random right-hand side and omega shift
-        self.rhs = cp.random.rand(self.n_vec, self.A_size) * self.scaling
-        self.omega_shift = (cp.random.rand(self.n_vec) + 2) * self.scaling / 2
+        self.rhs = cp.asarray(np.random.rand(self.n_vec, self.A_size)) * self.scaling
+        self.omega_shift = cp.asarray(np.random.rand(self.n_vec) + 2) * self.scaling / 2
 
         @staticmethod
         def matrix_vector_product(x):

@@ -121,9 +121,16 @@ class CMakeBuildPy(build_py):
         self.announce('Configuring extensions', level=3)
         src_dir = os.path.abspath(os.path.join(__file__, '..', 'gpu4pyscf', 'lib'))
         dest_dir = os.path.join(self.build_temp, 'gpu4pyscf')
-        cmd = ['cmake', f'-S{src_dir}', f'-B{dest_dir}', '-DBUILD_LIBXC=OFF']
+        # On CUDA the libxc fork comes from the gpu4pyscf-libxc-cuda* wheel, and
+        # SYCL uses ExchCXX, so the bundled libxc build stays off. On HIP there
+        # is no such wheel: build libxc 7.1.2 from source with ENABLE_HIP (see
+        # lib/CMakeLists.txt).
+        build_libxc = 'ON' if BACKEND == 'hip' else 'OFF'
+        cmd = ['cmake', f'-S{src_dir}', f'-B{dest_dir}', f'-DBUILD_LIBXC={build_libxc}']
         if BACKEND == 'hip':
             cmd.extend(self._setup_hip_build())
+        else:
+            cmd.append('-DBUILD_LIBXC=OFF')
         configure_args = os.getenv('CMAKE_CONFIGURE_ARGS')
         if configure_args:
             cmd.extend(configure_args.split(' '))
